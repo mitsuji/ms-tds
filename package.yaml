@@ -1,0 +1,51 @@
+name:                ms-tds
+version:             0.1.0.0
+github:              "mitsuji/ms-tds"
+license:             BSD3
+author:              "Takamasa Mitsuji"
+maintainer:          "tkms@mitsuji.org"
+copyright:           "2019 Takamasa Mitsuji"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/mitsuji/ms-tds#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- bytestring
+- binary
+- mtl
+- array
+- text
+- time
+- network
+- tls
+- data-default-class
+- x509-store
+- x509-system
+- uuid-types
+
+
+library:
+  source-dirs: src
+
+
+tests:
+  tds-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ms-tds
