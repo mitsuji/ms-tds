@@ -31,7 +31,7 @@ used by Microsoft SQL Server and others.
 
 * 7.1 Revision 1 (SQL Server 2000 SP1 and later)
 
-* Tested with SQL Server 2008 R2
+* Tested with SQL Server 2008 R2, SQL Server 2014
 
 
 
