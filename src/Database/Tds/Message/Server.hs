@@ -204,7 +204,7 @@ data TokenStream = TSAltMetaData !AltMetaData
                  
                  | TSSSPI !B.ByteString
                  
-                 | TSTabName 
+                 | TSTabName ![[T.Text]]
                    
                  | TSOther !Word8
                  
@@ -242,7 +242,7 @@ getTokenStreamS = do
     getAltRow :: Get TokenStream -- [TODO] implementation, SQL statement that generates totals
     getAltRow = return TSAltRow
     
-    getColInfo :: Get TokenStream -- [TODO] test, sp_cursoropen, and sp_cursorfetch
+    getColInfo :: Get TokenStream
     getColInfo = do
       len <- fromIntegral <$> Get.getWord16le
       bs  <- Get.getLazyByteString len
@@ -464,8 +464,32 @@ getTokenStreamS = do
       bs <- getByteString len
       return $ TSSSPI bs
     
-    getTabName :: Get TokenStream -- [TODO] test, sp_cursoropen
-    getTabName = return $ TSTabName
+    getTabName :: Get TokenStream
+    getTabName = do
+      len <- fromIntegral <$> Get.getWord16le
+      bs  <- Get.getLazyByteString len
+      return $ TSTabName $ Get.runGet (getAllTableNames len) bs
+      where
+        getAllTableNames :: Int64 -> Get [[T.Text]]
+        getAllTableNames len = f
+          where
+            f :: Get [[T.Text]]
+            f = do
+              br <- Get.bytesRead
+              if br >= len
+                then return []
+                else do x <- getTableName
+                        xs <-f
+                        return $ x:xs
+
+        getTableName :: Get [T.Text]
+        getTableName = do
+          numParts <- fromIntegral <$> Get.getWord8
+          names <- mapM (\_ -> getText16 ) [1..numParts]
+          return names
+          
+          
+          
 
       
       
