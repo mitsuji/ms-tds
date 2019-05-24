@@ -84,7 +84,8 @@ defaultLogin7 = Login7 { l7TdsVersion = 0x71000001
 --                         , l7TimeZone = -120
                          , l7TimeZone = 0
 --                         , l7Collation = 0x36040000
-                         , l7Collation = 0x1104d000
+--                         , l7Collation = 0x1104d000
+                         , l7Collation = 0x00000000
                          , l7CltIntName = T.pack "DB-Library" -- "OLEDB", "ODBC"
                          , l7Language = mempty
 --                         , l7Language = T.pack "us_english"
