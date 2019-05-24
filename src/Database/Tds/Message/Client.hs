@@ -57,7 +57,7 @@ data Login7 = Login7 { l7TdsVersion :: !Word32
                      , l7OptionFlags2 :: !Word8
                      , l7OptionFlags3 :: !Word8
                      , l7TypeFlags :: !Word8
-                     , l7TimeZone :: !Word32
+                     , l7TimeZone :: !Int32
                      , l7Collation :: !Collation32
                      , l7CltIntName :: !T.Text
                      , l7Language :: !T.Text
@@ -81,7 +81,8 @@ defaultLogin7 = Login7 { l7TdsVersion = 0x71000001
                          , l7OptionFlags2 = 0
                          , l7OptionFlags3 = 0
                          , l7TypeFlags = 0
-                         , l7TimeZone = -120
+--                         , l7TimeZone = -120
+                         , l7TimeZone = 0
 --                         , l7Collation = 0x36040000
                          , l7Collation = 0x1104d000
                          , l7CltIntName = T.pack "DB-Library" -- "OLEDB", "ODBC"
@@ -202,7 +203,7 @@ putLogin7 x = do
 --  Put.putWord8 $ 0x02 + 0x01          -- flag2
   Put.putWord8 $ l7TypeFlags x        -- sql type
   Put.putWord8 $ l7OptionFlags3 x     -- flag3
-  Put.putWord32le $ l7TimeZone x      -- tz
+  Put.putInt32le $ l7TimeZone x       -- tz
   Put.putWord32be $ l7Collation x     -- collation
 --  Put.putWord32be $ 0x09040000        -- collation
 
