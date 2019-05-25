@@ -123,7 +123,7 @@ data Offset = Offset !OffsetIdentifier !OffsetLength
             deriving (Show)
 
 
-data MetaData = MetaData !(Maybe ColMetaData) !(Maybe AltMetaData) !(Maybe Offset)
+data MetaData = MetaData !(Maybe ColMetaData) !(Maybe AltMetaData)
               deriving (Show)
 
 
@@ -226,7 +226,7 @@ getTokenStreamS = do
     0xaa -> lift getError
     0xab -> lift getInfo
     0xad -> lift getLoginAck
-    0x78 -> getOffsetS
+    0x78 -> lift getOffset
     0xa9 -> lift getOrder
     0x79 -> lift getReturnStatus
     0xac -> lift getReturnValue
@@ -277,7 +277,7 @@ getTokenStreamS = do
       if cols == 0xffff
         then return $ TSColMetaData Nothing
         else do cmd <- lift $ Just . ColMetaData <$> getColumnDatas (fromIntegral cols) 0
-                modify $ \(MetaData _ mamd mofs) -> (MetaData cmd mamd mofs)
+                modify $ \(MetaData _ mamd) -> (MetaData cmd mamd)
                 return $ TSColMetaData cmd
         where
           getColumnDatas :: Int -> Int -> Get [MetaColumnData]
@@ -397,10 +397,9 @@ getTokenStreamS = do
       return $ TSLoginAck interface tdsVer server servVer
 
 
-    getOffsetS :: StateT MetaData Get TokenStream -- [TODO] test
-    getOffsetS = do
-      ofs <- lift $ Offset <$> Get.getWord16le <*> Get.getWord16le
-      modify $ \(MetaData mcmd mamd _) -> (MetaData mcmd mamd (Just ofs))
+    getOffset :: Get TokenStream -- [TODO] test
+    getOffset = do
+      ofs <- Offset <$> Get.getWord16le <*> Get.getWord16le
       return $ TSOffset ofs
 
     getOrder :: Get TokenStream
@@ -429,7 +428,7 @@ getTokenStreamS = do
     getRowS :: StateT MetaData Get TokenStream
     getRowS = do
       -- [TODO] error check
-      Just (ColMetaData colDatas) <- (\(MetaData mcmd mamd mofs) -> mcmd) <$> Control.Monad.State.get
+      Just (ColMetaData colDatas) <- (\(MetaData mcmd mamd) -> mcmd) <$> Control.Monad.State.get
       datas <- lift $ mapM (getColumnData . (\(MetaColumnData _ _ ti _ _) -> ti)) colDatas
       return $ TSRow datas
         where
@@ -555,7 +554,7 @@ newtype TokenStreams = TokenStreams [TokenStream]
 
 getTokenStreams :: Get TokenStreams
 getTokenStreams = do
-  rs <- (evalStateT getTokenStreamsS) (MetaData Nothing Nothing Nothing)
+  rs <- (evalStateT getTokenStreamsS) (MetaData Nothing Nothing)
   return $ TokenStreams rs
 
 
