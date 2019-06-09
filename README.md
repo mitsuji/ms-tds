@@ -48,7 +48,6 @@ used by Microsoft SQL Server and others.
 * Implement data types
   * AltMetaData
   * AltRow
-  * ColInfo
 
 
 * Implement [Binary.put](http://hackage.haskell.org/package/binary-0.10.0.0/docs/Data-Binary.html#v:put)
