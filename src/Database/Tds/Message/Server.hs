@@ -9,6 +9,7 @@ module Database.Tds.Message.Server ( TokenStreams (..)
                                    , TokenStream (..)
                                    
                                    , AltMetaData (..)
+                                   , AltRowData (..)
                                    
                                    , ColProperty (..)
                                    , CPColNum (..)
@@ -112,8 +113,13 @@ data ColMetaData = ColMetaData ![MetaColumnData]
                  deriving (Show)
 
 
+-- [TODO] implement data type
 data AltMetaData = AltMetaData
                  deriving (Show)
+
+-- [TODO] implement data type
+data AltRowData = AltRowData
+                deriving (Show)
 
 
 type OffsetIdentifier = Word16
@@ -136,8 +142,6 @@ data RowColumnData = RCDOrdinal !RawBytes
                    deriving (Show)
 
 
--- COLMETADATA_TOKEN, ALTMETDATA_TOKEN, OFFSET_TOKEN
-
 type CPColNum = Word8
 type CPTableNum = Word8
 type CPStatus = Word8
@@ -147,7 +151,7 @@ data ColProperty = ColProperty !CPColNum !CPTableNum !CPStatus !(Maybe CPColName
 
 type DoneStatus = Word16
 type DoneCurCmd = Word16
-type DoneRowCount = Word32 -- Word64 -- TDS 7.2
+type DoneRowCount = Int32 -- [MEMO] TDS 7.2 -> Word64
 data Done = Done !DoneStatus !DoneCurCmd !DoneRowCount
           deriving (Show)
 
@@ -161,7 +165,7 @@ type InfoClass = Word8
 type InfoMsgText = T.Text
 type InfoServerName = T.Text
 type InfoProcName = T.Text
-type InfoLineNumber = Word16 --  Word32 -- TDS 7.2
+type InfoLineNumber = Word16 -- [MEMO] TDS 7.2 -> (error:Int32,info:Word32)
 data Info = Info !InfoNumber !InfoState !InfoClass !InfoMsgText !InfoServerName !InfoProcName !InfoLineNumber
           deriving (Show)
 
@@ -170,44 +174,62 @@ type LATdsVersion = Word32
 type LAProgName = T.Text
 type LAProgVersion = Word32 -- [TODO] split bytes
 
-data TokenStream = TSAltMetaData !AltMetaData
+-- | [\[MS-TDS\] 2.2.7 Packet Data Token Stream Definition](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/67b6113c-d722-42d1-902c-3f6e8de09173)
+data TokenStream =
+                 -- | [\[MS-TDS\] 2.2.7.1 ALTMETADATA](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/004bba4a-8c23-4d7b-ab2c-d9e7ba864cd0) (not supprted)
+                   TSAltMetaData !AltMetaData
 
-                 | TSAltRow
-                 
+                 -- | [\[MS-TDS\] 2.2.7.2 ALTROW](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/d1c42761-6a64-43ab-8a55-fccb210ac073) (not supprted)
+                 | TSAltRow !AltRowData
+
+                 -- | [\[MS-TDS\] 2.2.7.3 COLINFO](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/aa8466c5-ca3d-48ca-a638-7c1becebe754)
                  | TSColInfo ![ColProperty]
-                   
+
+                 -- | [\[MS-TDS\] 2.2.7.4 COLMETADATA](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/58880b9f-381c-43b2-bf8b-0727a98c4f4c)
                  | TSColMetaData !(Maybe ColMetaData)
 
+                 -- | [\[MS-TDS\] 2.2.7.5 DONE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/3c06f110-98bd-4d5b-b836-b1ba66452cb7)
                  | TSDone !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.6 DONEINPROC](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/43e891c5-f7a1-432f-8f9f-233c4cd96afb)
                  | TSDoneInProc !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.7 DONEPROC](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/65e24140-edea-46e5-b710-209af2016195)
                  | TSDoneProc !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.8 ENVCHANGE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/2b3eb7e5-d43d-4d1b-bf4d-76b9e3afc791)
                  | TSEnvChange !ECType !ECNewValue !ECOldValue
 
+                 -- | [\[MS-TDS\] 2.2.7.9 ERROR](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/9805e9fa-1f8b-4cf8-8f78-8d2602228635)
                  | TSError !Info
 
+                 -- | [\[MS-TDS\] 2.2.7.12 INFO](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/284bb815-d083-4ed5-b33a-bdc2492e322b)
                  | TSInfo !Info
 
+                 -- | [\[MS-TDS\] 2.2.7.13 LOGINACK](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/490e563d-cc6e-4c86-bb95-ef0186b98032)
                  | TSLoginAck !LAInterface !LATdsVersion !LAProgName !LAProgVersion
 
+                 -- | [\[MS-TDS\] 2.2.7.15 OFFSET](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/8d0b37ff-20c1-439e-8f31-1d7f136249b5) (not tested)
                  | TSOffset !Offset
                    
+                 -- | [\[MS-TDS\] 2.2.7.16 ORDER](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/252759be-9d74-4435-809d-d55dd860ea78)
                  | TSOrder ![Word16]
                    
+                 -- | [\[MS-TDS\] 2.2.7.17 RETURNSTATUS](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/c719f199-e71b-4187-90b9-94f78bd1870e)
                  | TSReturnStatus !Int32
                    
+                 -- | [\[MS-TDS\] 2.2.7.18 RETURNVALUE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/7091f6f6-b83d-4ed2-afeb-ba5013dfb18f)
                  | TSReturnValue !ReturnValue
                    
+                 -- | [\[MS-TDS\] 2.2.7.19 ROW](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/3840ef93-3b10-4aca-9fd1-a210b8bb6d0c)
                  | TSRow ![RowColumnData]
                  
+                 -- | [\[MS-TDS\] 2.2.7.21 SSPI](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/07e2bb7b-8ba6-445f-89b1-cc76d8bfa9c6) (not tested)
                  | TSSSPI !B.ByteString
                  
+                 -- | [\[MS-TDS\] 2.2.7.22 TABNAME](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/140e3348-da08-409a-b6c3-f0fc9cee2d6e)
                  | TSTabName ![[T.Text]]
                    
-                 | TSOther !Word8
-                 
                  deriving (Show)
 
 
@@ -215,8 +237,8 @@ getTokenStreamS :: StateT MetaData Get TokenStream
 getTokenStreamS = do
   pt <- lift Get.getWord8
   case pt of
-    0x88 -> lift getAltMetaData -- [TODO] State Monad
-    0xd3 -> lift getAltRow      -- [TODO] State Monad
+    0x88 -> getAltMetaDataS
+    0xd3 -> getAltRowS
     0xa5 -> lift getColInfo
     0x81 -> getColMetaDataS
     0xfd -> lift getDone
@@ -236,11 +258,17 @@ getTokenStreamS = do
     _ -> lift $ getOther pt
   where
 
-    getAltMetaData :: Get TokenStream -- [TODO] implementation, SQL statement that generates totals
-    getAltMetaData = return $ TSAltMetaData AltMetaData
-    
-    getAltRow :: Get TokenStream -- [TODO] implementation, SQL statement that generates totals
-    getAltRow = return TSAltRow
+     -- [TODO] find SQL statement that generates this type of packet, implementation
+    getAltMetaDataS :: StateT MetaData Get TokenStream
+    getAltMetaDataS =
+      fail "getTokenStreamS.getAltMetaDataS: packet type ALTMEATADA not supportd"
+--      return $ TSAltMetaData AltMetaData
+
+    -- [TODO] find SQL statement that generates this type of packet, implementation
+    getAltRowS :: StateT MetaData Get TokenStream
+    getAltRowS =
+      fail "getTokenStreamS.getAltRowS: packet type ALTROW not supportd"
+--      return $ TSAltRow AltRowData
     
     getColInfo :: Get TokenStream
     getColInfo = do
@@ -308,24 +336,24 @@ getTokenStreamS = do
     getDone = do
       status <- Get.getWord16le
       curCmd <- Get.getWord16le
+      doneRowCount <- Get.getInt32le -- [MEMO] TDS 7.2 -> Word64
 --      doneRowCount <- Get.getWord64le
-      doneRowCount <- Get.getWord32le -- [MEMO] lte TDS 7.1 Int32
       return $ TSDone $ Done status curCmd doneRowCount
           
     getDoneInProc :: Get TokenStream
     getDoneInProc = do
       status <- Get.getWord16le
       curCmd <- Get.getWord16le
+      doneRowCount <- Get.getInt32le -- [MEMO] TDS 7.2 -> Word64
 --      doneRowCount <- Get.getWord64le
-      doneRowCount <- Get.getWord32le -- [TODO] lte TDS 7.1 Int32
       return $ TSDoneInProc $ Done status curCmd doneRowCount
           
     getDoneProc :: Get TokenStream
     getDoneProc = do
       status <- Get.getWord16le
       curCmd <- Get.getWord16le
+      doneRowCount <- Get.getInt32le -- [MEMO] TDS 7.2 -> Word64
 --      doneRowCount <- Get.getWord64le
-      doneRowCount <- Get.getWord32le -- [TODO] lte 7.1 Int32
       return $ TSDoneProc $ Done status curCmd doneRowCount
           
 
@@ -333,9 +361,9 @@ getTokenStreamS = do
     getEnvChange = do
       slen  <- Get.getWord16le
       envCode <- Get.getWord8
-      -- [TODO] split Type implementation
+      -- [TODO] to be detailed types
       (old,new) <- case envCode of
-        0x07 -> do -- [TODO] collation
+        0x07 -> do -- [MEMO] report SQL Collation
           oldLen <- Get.getWord8
           old <- getByteString oldLen
           newLen <- Get.getWord8
@@ -361,8 +389,8 @@ getTokenStreamS = do
       server <- getText8
       process <- getText8
 
---      line <- Get.getWord32le  -- TDS 7.2
-      line <- Get.getWord16le
+      line <- Get.getWord16le -- [MEMO] TDS 7.2 -> Int32
+--      line <- Get.getInt32le
           
       return $ TSError $ Info number state mclass message server process line
 
@@ -377,8 +405,8 @@ getTokenStreamS = do
       server <- getText8
       process <- getText8
 
---      line <- Get.getWord32le  -- TDS 7.2
-      line <- Get.getWord16le
+      line <- Get.getWord16le -- [MEMO] TDS 7.2 -> Word32
+--      line <- Get.getWord32le
           
       return $ TSInfo $ Info number state mclass message server process line
 
@@ -397,7 +425,8 @@ getTokenStreamS = do
       return $ TSLoginAck interface tdsVer server servVer
 
 
-    getOffset :: Get TokenStream -- [TODO] test
+    -- [TODO] find SQL statement that generates this type of packet, test
+    getOffset :: Get TokenStream
     getOffset = do
       ofs <- Offset <$> Get.getWord16le <*> Get.getWord16le
       return $ TSOffset ofs
@@ -410,15 +439,16 @@ getTokenStreamS = do
 
     getReturnStatus :: Get TokenStream
     getReturnStatus = do
-      val <- Get.getInt32le -- Value
+      val <- Get.getInt32le
       return $ TSReturnStatus val
 
-    getReturnValue :: Get TokenStream -- [TODO] test
+    getReturnValue :: Get TokenStream
     getReturnValue = do
       po <- Get.getWord16le
       pn <- getText8
       st <- Get.getWord8
-      ut <- Get.getWord16le
+      ut <- Get.getWord16le -- [MEMO] TDS 7.2 -> Word32
+--      ut <- Get.getWord32le
       fl <- Get.getWord16le
       ti <- Data.Binary.get
       vl <- getRawBytes ti
@@ -427,7 +457,7 @@ getTokenStreamS = do
 
     getRowS :: StateT MetaData Get TokenStream
     getRowS = do
-      -- [TODO] error check
+      -- [TODO] raise error when Nothing
       Just (ColMetaData colDatas) <- (\(MetaData mcmd mamd) -> mcmd) <$> Control.Monad.State.get
       datas <- lift $ mapM (getColumnData . (\(MetaColumnData _ _ ti _ _) -> ti)) colDatas
       return $ TSRow datas
@@ -440,13 +470,12 @@ getTokenStreamS = do
               TIImage{} -> getCDLarge ti
               _ -> RCDOrdinal <$> getRawBytes ti
 
-          -- [TODO] test when text,ntext,image is Null
           getCDLarge :: TypeInfo -> Get RowColumnData
           getCDLarge ti = do
             len <- Get.getWord8
             if len == 0
               then do
-                -- [TODO] should read 32bit ?
+                -- [MEMO] should read 32bit ?
                 case ti of
                   TIText{}  -> return $ RCDLarge Nothing Nothing Nothing
                   TINText{} -> return $ RCDLarge Nothing Nothing Nothing
@@ -457,7 +486,8 @@ getTokenStreamS = do
                       return $ RCDLarge (Just tp) (Just ts) dt
 
 
-    getSSPI :: Get TokenStream -- [TODO] test
+    -- [TODO] find SQL statement that generates this type of packet, test
+    getSSPI :: Get TokenStream
     getSSPI = do
       len <- Get.getWord16le
       bs <- getByteString len
@@ -495,28 +525,28 @@ getTokenStreamS = do
     getOther :: Word8 -> Get TokenStream
     getOther pt = do
       case pt of
-        0xae -> do
+        0xae ->
           -- FEATUREEXTACK
           -- [MEMO] introduced in TDS 7.4
-          return $ TSOther pt
-        0xee -> do
+          fail "getTokenStreamS.getOther: packet type FEATUREEXTACK not supportd"
+        0xee ->
           -- FEDAUTHINFO
           -- [MEMO] introduced in TDS 7.4
-          return $ TSOther pt
-        0xd2 -> do
+          fail "getTokenStreamS.getOther: packet type FEDAUTHINFO not supportd"
+        0xd2 ->
           -- NBCROW
           -- [MEMO] introduced in TDS 7.3.B
-          return $ TSOther pt
-        0xe4 -> do
+          fail "getTokenStreamS.getOther: packet type NBCROW not supported"
+        0xe4 ->
           -- SESSIONSTATE
           -- [MEMO] introduced in TDS 7.4
-          return $ TSOther pt
-        0x01 -> do
+          fail "getTokenStreamS.getOther: packet type SESSIONSTATE not supportd"
+        0x01 ->
           -- TVP ROW
           -- https://msdn.microsoft.com/en-us/library/dd304813.aspx
           -- [MEMO] not here ?
           -- [MEMO] introduced in TDS 7.3 ?
-          return $ TSOther pt
+          fail "getTokenStreamS.getOther: packet type TVP ROW not supported"
         _ -> fail "getTokenStreamS.getOther: invalid packet type"
 
 
@@ -546,7 +576,6 @@ getTokenStreamsS = f
 
 
 
--- [MEMO] Lazyness?
 newtype TokenStreams = TokenStreams [TokenStream]
                      deriving (Show)
 

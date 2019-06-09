@@ -49,6 +49,7 @@ import Database.Tds.Primitives.Collation
 
 
 
+-- | [\[MS-TDS\] 2.2.6.4 LOGIN7](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/773a62b6-ee89-4c02-9e5e-344882630aac)
 data Login7 = Login7 { l7TdsVersion :: !Word32
                      , l7PacketSize :: !Word32
                      , l7ClientProgVer :: !Word32
@@ -243,6 +244,7 @@ instance Binary Login7 where
 
 
 
+-- | [\[MS-TDS\] 2.2.6.7 SQLBatch](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/f2026cd3-9a46-4a3f-9a08-f63140bcbbe3)
 newtype SqlBatch  = SqlBatch T.Text
                   deriving (Show)
 
@@ -276,6 +278,7 @@ data RpcReqBatch = RpcReqBatchProcId !ProcID !OptionFlags ![RpcReqBatchParam]
                  deriving (Show)
 
 
+-- | [\[MS-TDS\] 2.2.6.6 RPC Request](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/619c43b6-9495-4a58-9e49-a4950db245b3)
 newtype RpcRequest = RpcRequest [RpcReqBatch]
                    deriving (Show)
                     

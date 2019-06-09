@@ -19,6 +19,8 @@ import qualified Data.ByteString.Lazy as LB
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LT
 
 import Data.Word (Word8(..),Word16(..),Word32(..),Word64(..))
 import Data.Int (Int8(..),Int16(..),Int32(..),Int64(..))
@@ -42,6 +44,7 @@ import Database.Tds.Primitives.Collation
 
 
 
+-- | [\[MS-TDS\] 2.2.5.4 Data Type Definitions](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/ffb02215-af07-4b50-8545-1fd522106c68)
 data TypeInfo = TINull       -- 0x1f
               | TIBit        -- 0x32
               | TIInt1       -- 0x30
@@ -311,7 +314,7 @@ instance Binary TypeInfo where
 
 
 
-type RawBytes = Maybe B.ByteString
+type RawBytes = Maybe LB.ByteString
 
 getRawBytes :: TypeInfo -> Get RawBytes
 getRawBytes = f
@@ -322,42 +325,42 @@ getRawBytes = f
       len <- Get.getWord8
       if len == 0
         then return Nothing
-        else Just <$> (Get.getByteString $ fromIntegral len)
+        else Just <$> (Get.getLazyByteString $ fromIntegral len)
     
     get8s :: Get RawBytes
     get8s = do
       len <- Get.getWord8
       if len == 0xff
         then return Nothing
-        else Just <$> (Get.getByteString $ fromIntegral len)
+        else Just <$> (Get.getLazyByteString $ fromIntegral len)
     
     get16s :: Get RawBytes
     get16s = do
       len <- Get.getWord16le
       if len == 0xffff
         then return Nothing
-        else Just <$> (Get.getByteString $ fromIntegral len)
+        else Just <$> (Get.getLazyByteString $ fromIntegral len)
     
     get32s :: Get RawBytes
     get32s = do
       len <- Get.getWord32le
       if len == 0xffffffff
         then return Nothing
-        else Just <$> (Get.getByteString $ fromIntegral len)
+        else Just <$> (Get.getLazyByteString $ fromIntegral len)
 
     f :: TypeInfo -> Get RawBytes
     f TINull      = return Nothing
-    f TIBit       = Just <$> Get.getByteString 1
-    f TIInt1      = Just <$> Get.getByteString 1
-    f TIInt2      = Just <$> Get.getByteString 2
-    f TIInt4      = Just <$> Get.getByteString 4
-    f TIInt8      = Just <$> Get.getByteString 8
-    f TIMoney4    = Just <$> Get.getByteString 4
-    f TIMoney8    = Just <$> Get.getByteString 8
-    f TIDateTime4 = Just <$> Get.getByteString 4
-    f TIDateTime8 = Just <$> Get.getByteString 8
-    f TIFlt4      = Just <$> Get.getByteString 4
-    f TIFlt8      = Just <$> Get.getByteString 8
+    f TIBit       = Just <$> Get.getLazyByteString 1
+    f TIInt1      = Just <$> Get.getLazyByteString 1
+    f TIInt2      = Just <$> Get.getLazyByteString 2
+    f TIInt4      = Just <$> Get.getLazyByteString 4
+    f TIInt8      = Just <$> Get.getLazyByteString 8
+    f TIMoney4    = Just <$> Get.getLazyByteString 4
+    f TIMoney8    = Just <$> Get.getLazyByteString 8
+    f TIDateTime4 = Just <$> Get.getLazyByteString 4
+    f TIDateTime8 = Just <$> Get.getLazyByteString 8
+    f TIFlt4      = Just <$> Get.getLazyByteString 4
+    f TIFlt8      = Just <$> Get.getLazyByteString 8
 
     f TIBitN  = get8n
     f TIIntN1 = get8n
@@ -400,26 +403,26 @@ putRawBytes = g
     put8n :: RawBytes -> Put
     put8n Nothing = Put.putWord8 0
     put8n (Just bs) = do
-      Put.putWord8 $ fromIntegral $ B.length bs
-      Put.putByteString  bs
+      Put.putWord8 $ fromIntegral $ LB.length bs
+      Put.putLazyByteString  bs
     
     put8s :: RawBytes -> Put
     put8s Nothing = Put.putWord8 0xff
     put8s (Just bs) = do
-      Put.putWord8 $ fromIntegral $ B.length bs
-      Put.putByteString  bs
+      Put.putWord8 $ fromIntegral $ LB.length bs
+      Put.putLazyByteString  bs
     
     put16s :: RawBytes -> Put
     put16s Nothing = Put.putWord16le 0xffff
     put16s (Just bs) = do
-      Put.putWord16le $ fromIntegral $ B.length bs
-      Put.putByteString  bs
+      Put.putWord16le $ fromIntegral $ LB.length bs
+      Put.putLazyByteString  bs
     
     put32s :: RawBytes -> Put
     put32s Nothing = Put.putWord32le 0xffffffff
     put32s (Just bs) = do
-      Put.putWord32le $ fromIntegral $ B.length bs
-      Put.putByteString  bs
+      Put.putWord32le $ fromIntegral $ LB.length bs
+      Put.putLazyByteString  bs
     
 
     g :: TypeInfo -> RawBytes -> Put
@@ -437,17 +440,17 @@ putRawBytes = g
     g TIFlt4 Nothing       = error "putRawBytes: Nothing is not convertible to TIFlt4"
     g TIFlt8 Nothing       = error "putRawBytes: Nothing is not convertible to TIFlt8"
     
-    g TIBit (Just bs)       = Put.putByteString bs
-    g TIInt1 (Just bs)      = Put.putByteString bs
-    g TIInt2 (Just bs)      = Put.putByteString bs
-    g TIInt4 (Just bs)      = Put.putByteString bs
-    g TIInt8 (Just bs)      = Put.putByteString bs
-    g TIMoney4 (Just bs)    = Put.putByteString bs
-    g TIMoney8 (Just bs)    = Put.putByteString bs
-    g TIDateTime4 (Just bs) = Put.putByteString bs
-    g TIDateTime8 (Just bs) = Put.putByteString bs
-    g TIFlt4 (Just bs)      = Put.putByteString bs
-    g TIFlt8 (Just bs)      = Put.putByteString bs
+    g TIBit (Just bs)       = Put.putLazyByteString bs
+    g TIInt1 (Just bs)      = Put.putLazyByteString bs
+    g TIInt2 (Just bs)      = Put.putLazyByteString bs
+    g TIInt4 (Just bs)      = Put.putLazyByteString bs
+    g TIInt8 (Just bs)      = Put.putLazyByteString bs
+    g TIMoney4 (Just bs)    = Put.putLazyByteString bs
+    g TIMoney8 (Just bs)    = Put.putLazyByteString bs
+    g TIDateTime4 (Just bs) = Put.putLazyByteString bs
+    g TIDateTime8 (Just bs) = Put.putLazyByteString bs
+    g TIFlt4 (Just bs)      = Put.putLazyByteString bs
+    g TIFlt8 (Just bs)      = Put.putLazyByteString bs
 
     g TIBitN rb       = put8n rb
     g TIIntN1 rb      = put8n rb
@@ -736,23 +739,24 @@ withValidText  = f
 
 
 
-runGet :: Get a -> B.ByteString -> a
-runGet f bs = Get.runGet f $ LB.fromStrict bs
+runGet :: Get a -> LB.ByteString -> a
+runGet f bs = Get.runGet f bs
 
-runPut :: Put -> B.ByteString
-runPut f = LB.toStrict $ Put.runPut f
+runPut :: Put -> LB.ByteString
+runPut f = Put.runPut f
 
 
-runGetBool :: TypeInfo -> B.ByteString -> Bool
+runGetBool :: TypeInfo -> LB.ByteString -> Bool
 runGetBool ti bs = (/=0) $ runGet (getIntegral ti) bs
 
-runPutBool :: TypeInfo -> Bool -> B.ByteString
+runPutBool :: TypeInfo -> Bool -> LB.ByteString
 runPutBool ti b = runPut $ putIntegral ti $ if b then 1 else 0
 
 
 
 -- [TODO] check nullable flag
 
+-- | [\[MS-TDS\] 2.2.5.5.1 System Data Type Values](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/5773bd3e-a8cf-45cc-a058-3fd3ec3a8aff)
 class Data a where
   fromRawBytes :: TypeInfo -> RawBytes -> a
   toRawBytes :: TypeInfo -> a -> RawBytes
@@ -803,7 +807,7 @@ instance Data Double where
 instance Data Decimal where
   fromRawBytes ti (Just bs) = withValidDecimal ti $ \vt ->
     let (p,s) = ps vt
-    in runGet (getDecimal (B.length bs) p s) bs
+    in runGet (getDecimal (fromIntegral $ LB.length bs) p s) bs
     where
       ps :: TypeInfo -> (Precision,Scale)
       ps (TIDecimalN p s) = (p,s)
@@ -812,21 +816,31 @@ instance Data Decimal where
   toRawBytes ti dec = withValidDecimal ti $ \_ -> Just $ runPut $ putDecimal dec
     
 instance Data UUID where
-  fromRawBytes ti (Just bs) = withValidUUID ti $ \_ -> case UUID.fromByteString $ LB.fromStrict bs of
+  fromRawBytes ti (Just bs) = withValidUUID ti $ \_ -> case UUID.fromByteString bs of
                                                          Nothing -> error "UUID.fromRawBytes: UUID.fromBtyteString error"
                                                          Just (uuid) -> uuid
   fromRawBytes ti Nothing = withValidUUID ti $ \_ -> error "UUID.fromRawBytes: Null value is not convertible to UUID"
-  toRawBytes ti uuid = withValidUUID ti $ \_ -> Just $ LB.toStrict $ UUID.toByteString uuid
+  toRawBytes ti uuid = withValidUUID ti $ \_ -> Just $ UUID.toByteString uuid
 
 instance Data B.ByteString where
-  fromRawBytes ti (Just bs) = withValidByteString ti $ \_ -> bs
+  fromRawBytes ti (Just bs) = withValidByteString ti $ \_ -> LB.toStrict bs
   fromRawBytes ti Nothing = withValidByteString ti $ \_ -> error "ByteString.fromRawBytes: Null value is not convertible to ByteString"
-  toRawBytes ti bs = withValidByteString ti $ \_ -> Just $ bs
+  toRawBytes ti bs = withValidByteString ti $ \_ -> Just $ LB.fromStrict bs
 
 instance Data T.Text where
-  fromRawBytes ti (Just bs) = withValidText ti $ \_ -> T.decodeUtf16LE bs
+  fromRawBytes ti (Just bs) = withValidText ti $ \_ -> T.decodeUtf16LE $ LB.toStrict bs
   fromRawBytes ti Nothing = withValidText ti $ \_ -> error "Text.fromRawBytes: Null value is not convertible to Text"
-  toRawBytes ti t = withValidText ti $ \_ -> Just $ T.encodeUtf16LE t
+  toRawBytes ti t = withValidText ti $ \_ -> Just $ LB.fromStrict $ T.encodeUtf16LE t
+
+instance Data LB.ByteString where
+  fromRawBytes ti (Just bs) = withValidByteString ti $ \_ -> bs
+  fromRawBytes ti Nothing = withValidByteString ti $ \_ -> error "ByteString.fromRawBytes: Null value is not convertible to ByteString"
+  toRawBytes ti bs = withValidByteString ti $ \_ -> Just bs
+
+instance Data LT.Text where
+  fromRawBytes ti (Just bs) = withValidText ti $ \_ -> LT.decodeUtf16LE bs
+  fromRawBytes ti Nothing = withValidText ti $ \_ -> error "Text.fromRawBytes: Null value is not convertible to Text"
+  toRawBytes ti t = withValidText ti $ \_ -> Just $ LT.encodeUtf16LE t
 
 
 
@@ -882,7 +896,7 @@ instance Data (Maybe Double) where
 instance Data (Maybe Decimal) where
   fromRawBytes ti rb = withValidDecimal ti $ \vt ->
     let (p,s) = ps vt
-    in (\bs -> runGet (getDecimal (B.length bs) p s) bs) <$> rb
+    in (\bs -> runGet (getDecimal (fromIntegral $ LB.length bs) p s) bs) <$> rb
     where
       ps :: TypeInfo -> (Precision,Scale)
       ps (TIDecimalN p s) = (p,s)
@@ -892,18 +906,26 @@ instance Data (Maybe Decimal) where
 instance Data (Maybe UUID) where
   fromRawBytes ti rb = withValidUUID ti $ \_ -> f <$> rb
     where
-      f :: B.ByteString -> UUID
-      f bs = case UUID.fromByteString $ LB.fromStrict bs of
+      f :: LB.ByteString -> UUID
+      f bs = case UUID.fromByteString bs of
                Nothing -> error "(Maybe UUID).fromRawBytes: UUID.fromBtyteString error"
                Just (uuid) -> uuid
-  toRawBytes ti m = withValidUUID ti $ \_ -> (LB.toStrict . UUID.toByteString) <$> m
+  toRawBytes ti m = withValidUUID ti $ \_ -> UUID.toByteString <$> m
 
 instance Data (Maybe B.ByteString) where
+  fromRawBytes ti rb = withValidByteString ti $ \_ -> LB.toStrict <$> rb
+  toRawBytes ti bs = withValidByteString ti $ \_ -> LB.fromStrict <$> bs
+  
+instance Data (Maybe T.Text) where
+  fromRawBytes ti rb = withValidText ti $ \_ -> T.decodeUtf16LE . LB.toStrict <$> rb 
+  toRawBytes ti t = withValidText ti $ \_ -> LB.fromStrict . T.encodeUtf16LE <$> t
+
+instance Data (Maybe LB.ByteString) where
   fromRawBytes ti rb = withValidByteString ti $ \_ -> rb
   toRawBytes ti bs = withValidByteString ti $ \_ -> bs
   
-instance Data (Maybe T.Text) where
-  fromRawBytes ti rb = withValidText ti $ \_ -> T.decodeUtf16LE <$> rb 
-  toRawBytes ti t = withValidText ti $ \_ -> T.encodeUtf16LE <$> t
+instance Data (Maybe LT.Text) where
+  fromRawBytes ti rb = withValidText ti $ \_ -> LT.decodeUtf16LE <$> rb 
+  toRawBytes ti t = withValidText ti $ \_ -> LT.encodeUtf16LE <$> t
 
 

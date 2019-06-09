@@ -30,6 +30,9 @@ module Database.Tds.Message ( -- * Client Message
                             -- ** AltMetaData
                             , AltMetaData (..)
                             
+                            -- ** AltRowData
+                            , AltRowData (..)
+
                             -- ** ColProperty
                             , ColProperty (..)
                             , CPColNum (..)
@@ -196,6 +199,7 @@ getMessage = (\(pt,bs) -> (pt,BB.toLazyByteString bs)) <$> runWriterT f
 
 
 
+-- | [\[MS-TDS\] 2.2.1 Client Messages](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/7ea9ee1a-b461-41f2-9004-141c0e712935)
 data ClientMessage = CMPrelogin !Prelogin
                    | CMLogin7 !Login7
                    | CMSqlBatch !SqlBatch
@@ -243,6 +247,7 @@ getServerMessageInstance = do
     _ -> fail "getServerMessageInstance: invalid packet type"
 
 
+-- | [\[MS-TDS\] 2.2.2 Server Messages](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/342f4cbb-2b4b-489c-8b63-f99b12021a94)
 newtype ServerMessage a = ServerMessage a
                         deriving (Show)
 

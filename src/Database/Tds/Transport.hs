@@ -23,6 +23,7 @@ import Control.Concurrent(MVar(..),newMVar,readMVar,modifyMVar_)
 import Database.Tds.Message.Header
 
 
+-- | [\[MS-TDS\] 3.2.5.2 Sent TLS/SSL Negotiation Packet State](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/d62e225b-d865-4ccc-8f73-de1ef49e30d4)
 contextNew :: Socket -> TLS.HostName -> IO TLS.Context
 contextNew sock host = do
   certStore <- getSystemCertificateStore
