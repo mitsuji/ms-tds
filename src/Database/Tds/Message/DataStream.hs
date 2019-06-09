@@ -44,6 +44,7 @@ import Database.Tds.Primitives.Collation
 
 
 
+-- | [\[MS-TDS\] 2.2.5.4 Data Type Definitions](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/ffb02215-af07-4b50-8545-1fd522106c68)
 data TypeInfo = TINull       -- 0x1f
               | TIBit        -- 0x32
               | TIInt1       -- 0x30
@@ -755,6 +756,7 @@ runPutBool ti b = runPut $ putIntegral ti $ if b then 1 else 0
 
 -- [TODO] check nullable flag
 
+-- | [\[MS-TDS\] 2.2.5.5.1 System Data Type Values](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/5773bd3e-a8cf-45cc-a058-3fd3ec3a8aff)
 class Data a where
   fromRawBytes :: TypeInfo -> RawBytes -> a
   toRawBytes :: TypeInfo -> a -> RawBytes

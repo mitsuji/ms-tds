@@ -9,6 +9,7 @@ module Database.Tds.Message.Server ( TokenStreams (..)
                                    , TokenStream (..)
                                    
                                    , AltMetaData (..)
+                                   , AltRowData (..)
                                    
                                    , ColProperty (..)
                                    , CPColNum (..)
@@ -173,40 +174,60 @@ type LATdsVersion = Word32
 type LAProgName = T.Text
 type LAProgVersion = Word32 -- [TODO] split bytes
 
-data TokenStream = TSAltMetaData !AltMetaData
+-- | [\[MS-TDS\] 2.2.7 Packet Data Token Stream Definition](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/67b6113c-d722-42d1-902c-3f6e8de09173)
+data TokenStream =
+                 -- | [\[MS-TDS\] 2.2.7.1 ALTMETADATA](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/004bba4a-8c23-4d7b-ab2c-d9e7ba864cd0) (not supprted)
+                   TSAltMetaData !AltMetaData
 
+                 -- | [\[MS-TDS\] 2.2.7.2 ALTROW](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/d1c42761-6a64-43ab-8a55-fccb210ac073) (not supprted)
                  | TSAltRow !AltRowData
-                 
+
+                 -- | [\[MS-TDS\] 2.2.7.3 COLINFO](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/aa8466c5-ca3d-48ca-a638-7c1becebe754)
                  | TSColInfo ![ColProperty]
-                   
+
+                 -- | [\[MS-TDS\] 2.2.7.4 COLMETADATA](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/58880b9f-381c-43b2-bf8b-0727a98c4f4c)
                  | TSColMetaData !(Maybe ColMetaData)
 
+                 -- | [\[MS-TDS\] 2.2.7.5 DONE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/3c06f110-98bd-4d5b-b836-b1ba66452cb7)
                  | TSDone !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.6 DONEINPROC](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/43e891c5-f7a1-432f-8f9f-233c4cd96afb)
                  | TSDoneInProc !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.7 DONEPROC](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/65e24140-edea-46e5-b710-209af2016195)
                  | TSDoneProc !Done
 
+                 -- | [\[MS-TDS\] 2.2.7.8 ENVCHANGE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/2b3eb7e5-d43d-4d1b-bf4d-76b9e3afc791)
                  | TSEnvChange !ECType !ECNewValue !ECOldValue
 
+                 -- | [\[MS-TDS\] 2.2.7.9 ERROR](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/9805e9fa-1f8b-4cf8-8f78-8d2602228635)
                  | TSError !Info
 
+                 -- | [\[MS-TDS\] 2.2.7.12 INFO](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/284bb815-d083-4ed5-b33a-bdc2492e322b)
                  | TSInfo !Info
 
+                 -- | [\[MS-TDS\] 2.2.7.13 LOGINACK](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/490e563d-cc6e-4c86-bb95-ef0186b98032)
                  | TSLoginAck !LAInterface !LATdsVersion !LAProgName !LAProgVersion
 
+                 -- | [\[MS-TDS\] 2.2.7.15 OFFSET](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/8d0b37ff-20c1-439e-8f31-1d7f136249b5) (not tested)
                  | TSOffset !Offset
                    
+                 -- | [\[MS-TDS\] 2.2.7.16 ORDER](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/252759be-9d74-4435-809d-d55dd860ea78)
                  | TSOrder ![Word16]
                    
+                 -- | [\[MS-TDS\] 2.2.7.17 RETURNSTATUS](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/c719f199-e71b-4187-90b9-94f78bd1870e)
                  | TSReturnStatus !Int32
                    
+                 -- | [\[MS-TDS\] 2.2.7.18 RETURNVALUE](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/7091f6f6-b83d-4ed2-afeb-ba5013dfb18f)
                  | TSReturnValue !ReturnValue
                    
+                 -- | [\[MS-TDS\] 2.2.7.19 ROW](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/3840ef93-3b10-4aca-9fd1-a210b8bb6d0c)
                  | TSRow ![RowColumnData]
                  
+                 -- | [\[MS-TDS\] 2.2.7.21 SSPI](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/07e2bb7b-8ba6-445f-89b1-cc76d8bfa9c6) (not tested)
                  | TSSSPI !B.ByteString
                  
+                 -- | [\[MS-TDS\] 2.2.7.22 TABNAME](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/140e3348-da08-409a-b6c3-f0fc9cee2d6e)
                  | TSTabName ![[T.Text]]
                    
                  deriving (Show)

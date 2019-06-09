@@ -18,6 +18,7 @@ import qualified Data.Binary.Get as Get
 type Collation32 = Word32
 type SortId = Word8
 
+-- | [\[MS-TDS\] 2.2.5.1.2 Collation Rule Definition](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/3d29e8dc-218a-42c6-9ba4-947ebca9fd7e)
 data Collation = Collation !Collation32 !SortId
                deriving (Show)
 
