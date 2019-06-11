@@ -32,54 +32,54 @@ precisionToLen p =
 
 -- [MEMO] Correctness is not sure...
 -- [TODO] Test
-data Decimal = DecimalS0 !Precision !Fixed0
-             | DecimalS1 !Precision !Fixed1
-             | DecimalS2 !Precision !Fixed2
-             | DecimalS3 !Precision !Fixed3
-             | DecimalS4 !Precision !Fixed4
-             | DecimalS5 !Precision !Fixed5
-             | DecimalS6 !Precision !Fixed6
-             | DecimalS7 !Precision !Fixed7
-             | DecimalS8 !Precision !Fixed8
-             | DecimalS9 !Precision !Fixed9
-             | DecimalS10 !Precision !Fixed10
-             | DecimalS11 !Precision !Fixed11
-             | DecimalS12 !Precision !Fixed12
-             | DecimalS13 !Precision !Fixed13
-             | DecimalS14 !Precision !Fixed14
-             | DecimalS15 !Precision !Fixed15
-             | DecimalS16 !Precision !Fixed16
-             | DecimalS17 !Precision !Fixed17
-             | DecimalS18 !Precision !Fixed18
-             | DecimalS19 !Precision !Fixed19
-             | DecimalS20 !Precision !Fixed20
-             | DecimalS21 !Precision !Fixed21
-             | DecimalS22 !Precision !Fixed22
-             | DecimalS23 !Precision !Fixed23
-             | DecimalS24 !Precision !Fixed24
-             | DecimalS25 !Precision !Fixed25
-             | DecimalS26 !Precision !Fixed26
-             | DecimalS27 !Precision !Fixed27
-             | DecimalS28 !Precision !Fixed28
-             | DecimalS29 !Precision !Fixed29
-             | DecimalS30 !Precision !Fixed30
-             | DecimalS31 !Precision !Fixed31
-             | DecimalS32 !Precision !Fixed32
-             | DecimalS33 !Precision !Fixed33
-             | DecimalS34 !Precision !Fixed34
-             | DecimalS35 !Precision !Fixed35
-             | DecimalS36 !Precision !Fixed36
-             | DecimalS37 !Precision !Fixed37
-             | DecimalS38 !Precision !Fixed38
+data Decimal = DecimalS0 !Fixed0
+             | DecimalS1 !Fixed1
+             | DecimalS2 !Fixed2
+             | DecimalS3 !Fixed3
+             | DecimalS4 !Fixed4
+             | DecimalS5 !Fixed5
+             | DecimalS6 !Fixed6
+             | DecimalS7 !Fixed7
+             | DecimalS8 !Fixed8
+             | DecimalS9 !Fixed9
+             | DecimalS10 !Fixed10
+             | DecimalS11 !Fixed11
+             | DecimalS12 !Fixed12
+             | DecimalS13 !Fixed13
+             | DecimalS14 !Fixed14
+             | DecimalS15 !Fixed15
+             | DecimalS16 !Fixed16
+             | DecimalS17 !Fixed17
+             | DecimalS18 !Fixed18
+             | DecimalS19 !Fixed19
+             | DecimalS20 !Fixed20
+             | DecimalS21 !Fixed21
+             | DecimalS22 !Fixed22
+             | DecimalS23 !Fixed23
+             | DecimalS24 !Fixed24
+             | DecimalS25 !Fixed25
+             | DecimalS26 !Fixed26
+             | DecimalS27 !Fixed27
+             | DecimalS28 !Fixed28
+             | DecimalS29 !Fixed29
+             | DecimalS30 !Fixed30
+             | DecimalS31 !Fixed31
+             | DecimalS32 !Fixed32
+             | DecimalS33 !Fixed33
+             | DecimalS34 !Fixed34
+             | DecimalS35 !Fixed35
+             | DecimalS36 !Fixed36
+             | DecimalS37 !Fixed37
+             | DecimalS38 !Fixed38
              deriving (Show)
 
 
-bytesToDecimal :: Precision -> Scale -> Word8 -> B.ByteString -> Decimal
-bytesToDecimal p s sign bs =
+bytesToDecimal :: Scale -> Word8 -> B.ByteString -> Decimal
+bytesToDecimal s sign bs =
   let
     sign' = if sign == 0x01 then 1 else -1
     i = bytesToInteger bs
-  in integerToDecimal p s $ sign' * i
+  in integerToDecimal s $ sign' * i
 
 
 -- [MEMO] signed, little endian
@@ -88,51 +88,51 @@ bytesToInteger = B.foldl' f 0 . B.reverse
   where
     f a b = a `shift` 8 .|. fromIntegral b
 
-integerToDecimal :: Precision -> Scale -> Integer -> Decimal
-integerToDecimal p s i =
+integerToDecimal :: Scale -> Integer -> Decimal
+integerToDecimal s i =
   case s of
-    0 -> DecimalS0 p $ MkFixed i 
-    1 -> DecimalS1 p $ MkFixed i 
-    2 -> DecimalS2 p $ MkFixed i 
-    3 -> DecimalS3 p $ MkFixed i 
-    4 -> DecimalS4 p $ MkFixed i 
-    5 -> DecimalS5 p $ MkFixed i 
-    6 -> DecimalS6 p $ MkFixed i 
-    7 -> DecimalS7 p $ MkFixed i 
-    8 -> DecimalS8 p $ MkFixed i 
-    9 -> DecimalS9 p $ MkFixed i 
+    0 -> DecimalS0 $ MkFixed i 
+    1 -> DecimalS1 $ MkFixed i 
+    2 -> DecimalS2 $ MkFixed i 
+    3 -> DecimalS3 $ MkFixed i 
+    4 -> DecimalS4 $ MkFixed i 
+    5 -> DecimalS5 $ MkFixed i 
+    6 -> DecimalS6 $ MkFixed i 
+    7 -> DecimalS7 $ MkFixed i 
+    8 -> DecimalS8 $ MkFixed i 
+    9 -> DecimalS9 $ MkFixed i 
 
-    10 -> DecimalS10 p $ MkFixed i
-    11 -> DecimalS11 p $ MkFixed i
-    12 -> DecimalS12 p $ MkFixed i
-    13 -> DecimalS13 p $ MkFixed i
-    14 -> DecimalS14 p $ MkFixed i
-    15 -> DecimalS15 p $ MkFixed i
-    16 -> DecimalS16 p $ MkFixed i
-    17 -> DecimalS17 p $ MkFixed i
-    18 -> DecimalS18 p $ MkFixed i
-    19 -> DecimalS19 p $ MkFixed i
+    10 -> DecimalS10 $ MkFixed i
+    11 -> DecimalS11 $ MkFixed i
+    12 -> DecimalS12 $ MkFixed i
+    13 -> DecimalS13 $ MkFixed i
+    14 -> DecimalS14 $ MkFixed i
+    15 -> DecimalS15 $ MkFixed i
+    16 -> DecimalS16 $ MkFixed i
+    17 -> DecimalS17 $ MkFixed i
+    18 -> DecimalS18 $ MkFixed i
+    19 -> DecimalS19 $ MkFixed i
 
-    20 -> DecimalS20 p $ MkFixed i
-    21 -> DecimalS21 p $ MkFixed i
-    22 -> DecimalS22 p $ MkFixed i
-    23 -> DecimalS23 p $ MkFixed i
-    24 -> DecimalS24 p $ MkFixed i
-    25 -> DecimalS25 p $ MkFixed i
-    26 -> DecimalS26 p $ MkFixed i
-    27 -> DecimalS27 p $ MkFixed i
-    28 -> DecimalS28 p $ MkFixed i
-    29 -> DecimalS29 p $ MkFixed i
+    20 -> DecimalS20 $ MkFixed i
+    21 -> DecimalS21 $ MkFixed i
+    22 -> DecimalS22 $ MkFixed i
+    23 -> DecimalS23 $ MkFixed i
+    24 -> DecimalS24 $ MkFixed i
+    25 -> DecimalS25 $ MkFixed i
+    26 -> DecimalS26 $ MkFixed i
+    27 -> DecimalS27 $ MkFixed i
+    28 -> DecimalS28 $ MkFixed i
+    29 -> DecimalS29 $ MkFixed i
 
-    30 -> DecimalS30 p $ MkFixed i
-    31 -> DecimalS31 p $ MkFixed i
-    32 -> DecimalS32 p $ MkFixed i
-    33 -> DecimalS33 p $ MkFixed i
-    34 -> DecimalS34 p $ MkFixed i
-    35 -> DecimalS35 p $ MkFixed i
-    36 -> DecimalS36 p $ MkFixed i
-    37 -> DecimalS37 p $ MkFixed i
-    38 -> DecimalS38 p $ MkFixed i
+    30 -> DecimalS30 $ MkFixed i
+    31 -> DecimalS31 $ MkFixed i
+    32 -> DecimalS32 $ MkFixed i
+    33 -> DecimalS33 $ MkFixed i
+    34 -> DecimalS34 $ MkFixed i
+    35 -> DecimalS35 $ MkFixed i
+    36 -> DecimalS36 $ MkFixed i
+    37 -> DecimalS37 $ MkFixed i
+    38 -> DecimalS38 $ MkFixed i
 
     _ -> error "integerToDecimal: invalid scale"
 
@@ -149,54 +149,54 @@ integerToBytes len i = B.pack $ f len i
       in (fromIntegral m) : f (len-1) d
 
 
-decimalToBytes :: Decimal -> (Word8,B.ByteString)
-decimalToBytes dec =
+decimalToBytes :: Precision -> Decimal -> (Word8,B.ByteString)
+decimalToBytes p dec =
   let
-    (p,i) = int dec
+    i = int dec
     sign = if signum i == -1 then 0x00 else 0x01
     bs = integerToBytes (precisionToLen p) $ abs i
   in (sign,bs)
   where
-    int :: Decimal -> (Precision,Integer)
-    int (DecimalS0  p (MkFixed i)) =  (p,i)
-    int (DecimalS1  p (MkFixed i)) =  (p,i)
-    int (DecimalS2  p (MkFixed i)) =  (p,i)
-    int (DecimalS3  p (MkFixed i)) =  (p,i)
-    int (DecimalS4  p (MkFixed i)) =  (p,i)
-    int (DecimalS5  p (MkFixed i)) =  (p,i)
-    int (DecimalS6  p (MkFixed i)) =  (p,i)
-    int (DecimalS7  p (MkFixed i)) =  (p,i)
-    int (DecimalS8  p (MkFixed i)) =  (p,i)
-    int (DecimalS9  p (MkFixed i)) =  (p,i)
-    int (DecimalS10 p (MkFixed i)) =  (p,i)
-    int (DecimalS11 p (MkFixed i)) =  (p,i)
-    int (DecimalS12 p (MkFixed i)) =  (p,i)
-    int (DecimalS13 p (MkFixed i)) =  (p,i)
-    int (DecimalS14 p (MkFixed i)) =  (p,i)
-    int (DecimalS15 p (MkFixed i)) =  (p,i)
-    int (DecimalS16 p (MkFixed i)) =  (p,i)
-    int (DecimalS17 p (MkFixed i)) =  (p,i)
-    int (DecimalS18 p (MkFixed i)) =  (p,i)
-    int (DecimalS19 p (MkFixed i)) =  (p,i)
-    int (DecimalS20 p (MkFixed i)) =  (p,i)
-    int (DecimalS21 p (MkFixed i)) =  (p,i)
-    int (DecimalS22 p (MkFixed i)) =  (p,i)
-    int (DecimalS23 p (MkFixed i)) =  (p,i)
-    int (DecimalS24 p (MkFixed i)) =  (p,i)
-    int (DecimalS25 p (MkFixed i)) =  (p,i)
-    int (DecimalS26 p (MkFixed i)) =  (p,i)
-    int (DecimalS27 p (MkFixed i)) =  (p,i)
-    int (DecimalS28 p (MkFixed i)) =  (p,i)
-    int (DecimalS29 p (MkFixed i)) =  (p,i)
-    int (DecimalS30 p (MkFixed i)) =  (p,i)
-    int (DecimalS31 p (MkFixed i)) =  (p,i)
-    int (DecimalS32 p (MkFixed i)) =  (p,i)
-    int (DecimalS33 p (MkFixed i)) =  (p,i)
-    int (DecimalS34 p (MkFixed i)) =  (p,i)
-    int (DecimalS35 p (MkFixed i)) =  (p,i)
-    int (DecimalS36 p (MkFixed i)) =  (p,i)
-    int (DecimalS37 p (MkFixed i)) =  (p,i)
-    int (DecimalS38 p (MkFixed i)) =  (p,i)
+    int :: Decimal -> Integer
+    int (DecimalS0  (MkFixed i)) = i
+    int (DecimalS1  (MkFixed i)) = i
+    int (DecimalS2  (MkFixed i)) = i
+    int (DecimalS3  (MkFixed i)) = i
+    int (DecimalS4  (MkFixed i)) = i
+    int (DecimalS5  (MkFixed i)) = i
+    int (DecimalS6  (MkFixed i)) = i
+    int (DecimalS7  (MkFixed i)) = i
+    int (DecimalS8  (MkFixed i)) = i
+    int (DecimalS9  (MkFixed i)) = i
+    int (DecimalS10 (MkFixed i)) = i
+    int (DecimalS11 (MkFixed i)) = i
+    int (DecimalS12 (MkFixed i)) = i
+    int (DecimalS13 (MkFixed i)) = i
+    int (DecimalS14 (MkFixed i)) = i
+    int (DecimalS15 (MkFixed i)) = i
+    int (DecimalS16 (MkFixed i)) = i
+    int (DecimalS17 (MkFixed i)) = i
+    int (DecimalS18 (MkFixed i)) = i
+    int (DecimalS19 (MkFixed i)) = i
+    int (DecimalS20 (MkFixed i)) = i
+    int (DecimalS21 (MkFixed i)) = i
+    int (DecimalS22 (MkFixed i)) = i
+    int (DecimalS23 (MkFixed i)) = i
+    int (DecimalS24 (MkFixed i)) = i
+    int (DecimalS25 (MkFixed i)) = i
+    int (DecimalS26 (MkFixed i)) = i
+    int (DecimalS27 (MkFixed i)) = i
+    int (DecimalS28 (MkFixed i)) = i
+    int (DecimalS29 (MkFixed i)) = i
+    int (DecimalS30 (MkFixed i)) = i
+    int (DecimalS31 (MkFixed i)) = i
+    int (DecimalS32 (MkFixed i)) = i
+    int (DecimalS33 (MkFixed i)) = i
+    int (DecimalS34 (MkFixed i)) = i
+    int (DecimalS35 (MkFixed i)) = i
+    int (DecimalS36 (MkFixed i)) = i
+    int (DecimalS37 (MkFixed i)) = i
+    int (DecimalS38 (MkFixed i)) = i
 
 
 

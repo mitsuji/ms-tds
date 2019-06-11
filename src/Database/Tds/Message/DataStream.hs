@@ -686,15 +686,16 @@ withValidDecimal  = f
 
 -- https://msdn.microsoft.com/en-us/library/ee780893.aspx
 -- [MEMO] sign byte + signed bytes
-getDecimal :: Int -> Precision -> Scale -> Get Decimal
-getDecimal len p s = 
-  bytesToDecimal p s <$> Get.getWord8 <*> (Get.getByteString $ fromIntegral $ len -1)
+getDecimal :: Int -> Scale -> Get Decimal
+getDecimal len s = 
+  bytesToDecimal s <$> Get.getWord8 <*> (Get.getByteString $ fromIntegral $ len -1)
 
-putDecimal :: Decimal -> Put
-putDecimal dec = do -- [TODO] test
-  let (s,bs) = decimalToBytes dec
+putDecimal :: TypeInfo -> Decimal -> Put
+putDecimal (TIDecimalN p _) dec = do -- [TODO] test
+  let (s,bs) = decimalToBytes p dec
   Put.putWord8 s
   Put.putByteString bs
+putDecimal (TINumericN p s) dec = putDecimal (TIDecimalN p s) dec
 
 
 
@@ -807,14 +808,13 @@ instance Data Double where
 
 instance Data Decimal where
   fromRawBytes ti (Just bs) = withValidDecimal ti $ \vt ->
-    let (p,s) = ps vt
-    in runGet (getDecimal (fromIntegral $ LB.length bs) p s) bs
+    runGet (getDecimal (fromIntegral $ LB.length bs) (scale vt)) bs
     where
-      ps :: TypeInfo -> (Precision,Scale)
-      ps (TIDecimalN p s) = (p,s)
-      ps (TINumericN p s) = (p,s)
+      scale :: TypeInfo -> Scale
+      scale (TIDecimalN _ s) = s
+      scale (TINumericN _ s) = s
   fromRawBytes ti Nothing = withValidDecimal ti $ \_ -> error "Decimal.fromRawBytes: Null value is not convertible to Decimal"
-  toRawBytes ti dec = withValidDecimal ti $ \_ -> Just $ runPut $ putDecimal dec
+  toRawBytes ti dec = withValidDecimal ti $ \_ -> Just $ runPut $ putDecimal ti dec
     
 instance Data UUID where
   fromRawBytes ti (Just bs) = withValidUUID ti $ \_ -> case UUID.fromByteString bs of
@@ -896,13 +896,12 @@ instance Data (Maybe Double) where
 
 instance Data (Maybe Decimal) where
   fromRawBytes ti rb = withValidDecimal ti $ \vt ->
-    let (p,s) = ps vt
-    in (\bs -> runGet (getDecimal (fromIntegral $ LB.length bs) p s) bs) <$> rb
+    (\bs -> runGet (getDecimal (fromIntegral $ LB.length bs) (scale vt)) bs) <$> rb
     where
-      ps :: TypeInfo -> (Precision,Scale)
-      ps (TIDecimalN p s) = (p,s)
-      ps (TINumericN p s) = (p,s)
-  toRawBytes ti dec = withValidDecimal ti $ \_ -> runPut . putDecimal <$> dec
+      scale :: TypeInfo -> Scale
+      scale (TIDecimalN _ s) = s
+      scale (TINumericN _ s) = s
+  toRawBytes ti dec = withValidDecimal ti $ \_ -> runPut . putDecimal ti <$>  dec
 
 instance Data (Maybe UUID) where
   fromRawBytes ti rb = withValidUUID ti $ \_ -> f <$> rb
