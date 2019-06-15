@@ -13,6 +13,7 @@ module Database.Tds.Message.DataStream ( TypeInfo (..)
                                        ) where
 
 import Data.Monoid((<>))
+import Control.Applicative((<$>),(<*>))
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
