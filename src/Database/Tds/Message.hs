@@ -104,6 +104,14 @@ module Database.Tds.Message ( -- * Client Message
                             , Scale (..)
                             , Decimal (..)
                             , Money (..)
+                            , decimal0,decimal1,decimal2,decimal3,decimal4
+                            , decimal5,decimal6,decimal7,decimal8,decimal9
+                            , decimal10,decimal11,decimal12,decimal13,decimal14
+                            , decimal15,decimal16,decimal17,decimal18,decimal19
+                            , decimal20,decimal21,decimal22,decimal23,decimal24
+                            , decimal25,decimal26,decimal27,decimal28,decimal29
+                            , decimal30,decimal31,decimal32,decimal33,decimal34
+                            , decimal35,decimal36,decimal37,decimal38
                             
                             , Collation (..)
                             , Collation32 (..)

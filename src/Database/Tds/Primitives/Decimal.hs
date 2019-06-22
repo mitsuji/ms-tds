@@ -9,6 +9,14 @@ module Database.Tds.Primitives.Decimal ( Precision (..)
                                        , precisionToLen
                                        , bytesToDecimal
                                        , decimalToBytes
+                                       , decimal0,decimal1,decimal2,decimal3,decimal4
+                                       , decimal5,decimal6,decimal7,decimal8,decimal9
+                                       , decimal10,decimal11,decimal12,decimal13,decimal14
+                                       , decimal15,decimal16,decimal17,decimal18,decimal19
+                                       , decimal20,decimal21,decimal22,decimal23,decimal24
+                                       , decimal25,decimal26,decimal27,decimal28,decimal29
+                                       , decimal30,decimal31,decimal32,decimal33,decimal34
+                                       , decimal35,decimal36,decimal37,decimal38
                                        ) where
 
 import Data.Monoid ((<>))
@@ -40,11 +48,17 @@ precisionToLen p =
 --             ...
 --             | DecimalS38 !Fixed38
 --             deriving (Show)
-#if MIN_VERSION_template_haskell(2,11,0)
+#if MIN_VERSION_template_haskell(2,12,0)
 returnQ [
   DataD [] (mkName "Decimal") [] Nothing
   ((flip map) [0..38] $ \i -> NormalC (mkName $ "DecimalS" <> show i) [(Bang NoSourceUnpackedness SourceStrict,ConT (mkName $ "Fixed" <> show i))] )
   [DerivClause Nothing [ConT ''Show]]
+  ]
+#elif MIN_VERSION_template_haskell(2,11,0)
+returnQ [
+  DataD [] (mkName "Decimal") [] Nothing
+  ((flip map) [0..38] $ \i -> NormalC (mkName $ "DecimalS" <> show i) [(Bang NoSourceUnpackedness SourceStrict,ConT (mkName $ "Fixed" <> show i))] )
+  [ConT ''Show]
   ]
 #else
 returnQ [
@@ -120,18 +134,18 @@ decimalToBytes p dec =
 
 
 
--- fixed0 :: Decimal -> Fixed0
--- fixed0 (DecimalS0 f) = f
--- fixed0 _ = error "decimal0: scale mismatch"
+-- decimal0 :: Decimal -> Fixed0
+-- decimal0 (DecimalS0 f) = f
+-- decimal0 _ = error "decimal0: scale mismatch"
 returnQ $ (flip map) [0..38] $ \i ->
-  (FunD $ mkName $ "fixed" <> show i)
+  (FunD $ mkName $ "decimal" <> show i)
   [
     Clause [ConP (mkName $ "DecimalS" <> show i) [VarP $ mkName "f"]]
     (NormalB $ VarE $ mkName "f")
     []
   ,
     Clause [WildP]
-    (NormalB $ AppE (VarE 'error) (LitE $ StringL $ "deimal" <> show i <> ": scale mismatch"))
+    (NormalB $ AppE (VarE 'error) (LitE $ StringL $ "decimal" <> show i <> ": scale mismatch"))
     []
   ]
 
