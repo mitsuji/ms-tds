@@ -22,7 +22,7 @@ description:         Please see the README on GitHub at <https://github.com/mits
 dependencies:
 - base >= 4.7 && < 5
 - bytestring
-- binary
+- binary >= 0.8.1.0
 - mtl
 - array
 - text
@@ -33,6 +33,8 @@ dependencies:
 - x509-store
 - x509-system
 - uuid-types
+- crypto-random
+- template-haskell
 
 
 library:

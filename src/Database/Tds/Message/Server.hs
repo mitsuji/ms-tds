@@ -64,7 +64,8 @@ module Database.Tds.Message.Server ( TokenStreams (..)
 
                                    ) where
 
-import Data.Monoid((<>))
+import Data.Monoid((<>),mempty)
+import Control.Applicative((<$>),(<*>))
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB

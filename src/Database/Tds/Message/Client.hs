@@ -23,7 +23,7 @@ module Database.Tds.Message.Client ( Login7 (..)
                                    
                                    ) where
 
-import Data.Monoid((<>))
+import Data.Monoid((<>),mempty)
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB

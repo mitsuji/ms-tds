@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 
 module Database.Tds.Transport (contextNew) where
 
-import Data.Monoid((<>))
+import Data.Monoid((<>),mempty)
+import Control.Applicative((<$>),(<*>))
 
 import Network.Socket (Socket,close)
 import Network.Socket.ByteString (recv,sendAll)
@@ -14,22 +16,30 @@ import Data.Binary (decode,encode)
 import Data.Default.Class (def)
 import qualified Network.TLS as TLS
 import Network.TLS (ClientParams(..),Supported(..),Shared(..),ValidationCache(..),ValidationCacheResult(..))
-import Network.TLS.Extra.Cipher (ciphersuite_default)
+import Network.TLS.Extra.Cipher (ciphersuite_strong)
 import Data.X509.CertificateStore (CertificateStore(..))
 import System.X509 (getSystemCertificateStore)
 
 import Control.Concurrent(MVar(..),newMVar,readMVar,modifyMVar_)
 
 import Database.Tds.Message.Header
+#if !MIN_VERSION_tls(1,3,0)
+import Crypto.Random(createEntropyPool,cprgCreate,SystemRNG(..))
+#endif
 
 
 -- | [\[MS-TDS\] 3.2.5.2 Sent TLS/SSL Negotiation Packet State](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/d62e225b-d865-4ccc-8f73-de1ef49e30d4)
-contextNew :: Socket -> TLS.HostName -> IO TLS.Context
+contextNew :: Socket -> String -> IO TLS.Context
 contextNew sock host = do
   certStore <- getSystemCertificateStore
   sock' <- newSecureSocket sock
-  TLS.contextNew sock' $ getTlsParams host certStore
-  
+#if MIN_VERSION_tls(1,3,0)
+  TLS.contextNew (getBackend sock') (getTlsParams host certStore)
+#else
+  pool <- createEntropyPool
+  TLS.contextNew (getBackend sock') (getTlsParams host certStore) (cprgCreate pool :: SystemRNG)
+#endif
+
 
 
 data SecureSocket = SecureSocket{ getSocket::Socket
@@ -40,10 +50,7 @@ data SecureSocket = SecureSocket{ getSocket::Socket
                     
 newSecureSocket sock = SecureSocket sock <$> newMVar mempty <*> newMVar 0 <*> newMVar mempty
 
-
-instance TLS.HasBackend SecureSocket where
-    initializeBackend sock' = return ()
-    getBackend sock' = TLS.Backend flush (close sock) sendAll' recvAll
+getBackend sock' = TLS.Backend flush (close sock) sendAll' recvAll
       where
         sock = getSocket sock'
               
@@ -102,13 +109,11 @@ instance TLS.HasBackend SecureSocket where
                 modifyMVar_ (getRecvBuff sock') (\_ -> return $ B.drop len buff)
                 return bs
 
-          
 
-getTlsParams :: TLS.HostName -> CertificateStore -> ClientParams
+getTlsParams :: String -> CertificateStore -> ClientParams
 getTlsParams host store =
   (TLS.defaultParamsClient host mempty) { clientSupported = def { supportedVersions = [TLS.TLS10]
-                                                                , supportedCiphers = ciphersuite_default
-                                                                , supportedEmptyPacket = False
+                                                                , supportedCiphers = ciphersuite_strong
                                                                 }
                                         , clientShared = def { sharedCAStore = store
                                                              , sharedValidationCache = validateCache
