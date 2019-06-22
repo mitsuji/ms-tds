@@ -84,7 +84,7 @@ module Database.Tds.Primitives.Fixed ( Fixed0 (..)
 
 import Data.Monoid ((<>))
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+import Language.Haskell.TH.Syntax (returnQ)
 import Data.Fixed (HasResolution(..),Fixed(..))
 
 

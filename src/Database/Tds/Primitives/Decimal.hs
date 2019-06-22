@@ -1,4 +1,6 @@
 {-# OPTIONS_HADDOCK hide #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/5e02042c-a741-4b5a-b91d-af5e236c5252
 
 module Database.Tds.Primitives.Decimal ( Precision (..)
@@ -9,12 +11,16 @@ module Database.Tds.Primitives.Decimal ( Precision (..)
                                        , decimalToBytes
                                        ) where
 
+import Data.Monoid ((<>))
 import Data.Word (Word8(..))
 import Data.Int (Int32(..))
 import Data.Fixed (Fixed(..))
 import Data.Bits ((.&.),(.|.),shift)
 import qualified Data.ByteString as B
 import Database.Tds.Primitives.Fixed
+
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax (returnQ)
 
 type Precision = Word8
 type Scale = Word8
@@ -30,48 +36,23 @@ precisionToLen p =
     _ -> error "precisionToLen: invalid Precision"
 
 
--- [MEMO] Correctness is not sure...
--- [TODO] Test
-data Decimal = DecimalS0 !Fixed0
-             | DecimalS1 !Fixed1
-             | DecimalS2 !Fixed2
-             | DecimalS3 !Fixed3
-             | DecimalS4 !Fixed4
-             | DecimalS5 !Fixed5
-             | DecimalS6 !Fixed6
-             | DecimalS7 !Fixed7
-             | DecimalS8 !Fixed8
-             | DecimalS9 !Fixed9
-             | DecimalS10 !Fixed10
-             | DecimalS11 !Fixed11
-             | DecimalS12 !Fixed12
-             | DecimalS13 !Fixed13
-             | DecimalS14 !Fixed14
-             | DecimalS15 !Fixed15
-             | DecimalS16 !Fixed16
-             | DecimalS17 !Fixed17
-             | DecimalS18 !Fixed18
-             | DecimalS19 !Fixed19
-             | DecimalS20 !Fixed20
-             | DecimalS21 !Fixed21
-             | DecimalS22 !Fixed22
-             | DecimalS23 !Fixed23
-             | DecimalS24 !Fixed24
-             | DecimalS25 !Fixed25
-             | DecimalS26 !Fixed26
-             | DecimalS27 !Fixed27
-             | DecimalS28 !Fixed28
-             | DecimalS29 !Fixed29
-             | DecimalS30 !Fixed30
-             | DecimalS31 !Fixed31
-             | DecimalS32 !Fixed32
-             | DecimalS33 !Fixed33
-             | DecimalS34 !Fixed34
-             | DecimalS35 !Fixed35
-             | DecimalS36 !Fixed36
-             | DecimalS37 !Fixed37
-             | DecimalS38 !Fixed38
-             deriving (Show)
+-- data Decimal = DecimalS0 !Fixed0
+--             ...
+--             | DecimalS38 !Fixed38
+--             deriving (Show)
+#if MIN_VERSION_template_haskell(2,11,0)
+returnQ [
+  DataD [] (mkName "Decimal") [] Nothing
+  ((flip map) [0..38] $ \i -> NormalC (mkName $ "DecimalS" <> show i) [(Bang NoSourceUnpackedness SourceStrict,ConT (mkName $ "Fixed" <> show i))] )
+  [DerivClause Nothing [ConT ''Show]]
+  ]
+#else
+returnQ [
+  DataD [] (mkName "Decimal") []
+  ((flip map) [0..38] $ \i -> NormalC (mkName $ "DecimalS" <> show i) [(IsStrict,ConT (mkName $ "Fixed" <> show i))] )
+  [''Show]
+  ]
+#endif
 
 
 bytesToDecimal :: Scale -> Word8 -> B.ByteString -> Decimal
@@ -90,51 +71,19 @@ bytesToInteger = B.foldl' f 0 . B.reverse
 
 integerToDecimal :: Scale -> Integer -> Decimal
 integerToDecimal s i =
-  case s of
-    0 -> DecimalS0 $ MkFixed i 
-    1 -> DecimalS1 $ MkFixed i 
-    2 -> DecimalS2 $ MkFixed i 
-    3 -> DecimalS3 $ MkFixed i 
-    4 -> DecimalS4 $ MkFixed i 
-    5 -> DecimalS5 $ MkFixed i 
-    6 -> DecimalS6 $ MkFixed i 
-    7 -> DecimalS7 $ MkFixed i 
-    8 -> DecimalS8 $ MkFixed i 
-    9 -> DecimalS9 $ MkFixed i 
+--  case s of
+--    0 -> DecimalS0 $ MkFixed i
+--    ...
+--    38 -> DecimalS38 $ MkFixed i
+--    _ -> error "integerToDecimal: invalid scale"
+  $(returnQ $ CaseE (VarE 's) $
+     (
+       (flip map) [0..38] $ \j ->
+         Match (LitP $ IntegerL j) (NormalB $ AppE (ConE $ mkName $ "DecimalS" <> show j) $ AppE (ConE $ mkName "MkFixed") (VarE 'i) ) []
+     )
+     <> [Match WildP (NormalB $ AppE (VarE 'error) (LitE $ StringL "integerToDecimal: invalid scale")) []]
+   )
 
-    10 -> DecimalS10 $ MkFixed i
-    11 -> DecimalS11 $ MkFixed i
-    12 -> DecimalS12 $ MkFixed i
-    13 -> DecimalS13 $ MkFixed i
-    14 -> DecimalS14 $ MkFixed i
-    15 -> DecimalS15 $ MkFixed i
-    16 -> DecimalS16 $ MkFixed i
-    17 -> DecimalS17 $ MkFixed i
-    18 -> DecimalS18 $ MkFixed i
-    19 -> DecimalS19 $ MkFixed i
-
-    20 -> DecimalS20 $ MkFixed i
-    21 -> DecimalS21 $ MkFixed i
-    22 -> DecimalS22 $ MkFixed i
-    23 -> DecimalS23 $ MkFixed i
-    24 -> DecimalS24 $ MkFixed i
-    25 -> DecimalS25 $ MkFixed i
-    26 -> DecimalS26 $ MkFixed i
-    27 -> DecimalS27 $ MkFixed i
-    28 -> DecimalS28 $ MkFixed i
-    29 -> DecimalS29 $ MkFixed i
-
-    30 -> DecimalS30 $ MkFixed i
-    31 -> DecimalS31 $ MkFixed i
-    32 -> DecimalS32 $ MkFixed i
-    33 -> DecimalS33 $ MkFixed i
-    34 -> DecimalS34 $ MkFixed i
-    35 -> DecimalS35 $ MkFixed i
-    36 -> DecimalS36 $ MkFixed i
-    37 -> DecimalS37 $ MkFixed i
-    38 -> DecimalS38 $ MkFixed i
-
-    _ -> error "integerToDecimal: invalid scale"
 
 
 -- [MEMO] signed, little endian
@@ -149,6 +98,18 @@ integerToBytes len i = B.pack $ f len i
       in (fromIntegral m) : f (len-1) d
 
 
+--    int :: Decimal -> Integer
+--    int (DecimalS0  (MkFixed i)) = i
+--    ...
+--    int (DecimalS38 (MkFixed i)) = i
+returnQ [
+  (FunD $ mkName "int")
+  $ (flip map) [0..38] $ \j->
+      Clause [ConP (mkName $ "DecimalS" <> show j) [ConP (mkName "MkFixed") [VarP $ mkName "i"]]]
+      (NormalB $ VarE $ mkName "i")
+      []
+  ]
+
 decimalToBytes :: Precision -> Decimal -> (Word8,B.ByteString)
 decimalToBytes p dec =
   let
@@ -156,47 +117,22 @@ decimalToBytes p dec =
     sign = if signum i == -1 then 0x00 else 0x01
     bs = integerToBytes (precisionToLen p) $ abs i
   in (sign,bs)
-  where
-    int :: Decimal -> Integer
-    int (DecimalS0  (MkFixed i)) = i
-    int (DecimalS1  (MkFixed i)) = i
-    int (DecimalS2  (MkFixed i)) = i
-    int (DecimalS3  (MkFixed i)) = i
-    int (DecimalS4  (MkFixed i)) = i
-    int (DecimalS5  (MkFixed i)) = i
-    int (DecimalS6  (MkFixed i)) = i
-    int (DecimalS7  (MkFixed i)) = i
-    int (DecimalS8  (MkFixed i)) = i
-    int (DecimalS9  (MkFixed i)) = i
-    int (DecimalS10 (MkFixed i)) = i
-    int (DecimalS11 (MkFixed i)) = i
-    int (DecimalS12 (MkFixed i)) = i
-    int (DecimalS13 (MkFixed i)) = i
-    int (DecimalS14 (MkFixed i)) = i
-    int (DecimalS15 (MkFixed i)) = i
-    int (DecimalS16 (MkFixed i)) = i
-    int (DecimalS17 (MkFixed i)) = i
-    int (DecimalS18 (MkFixed i)) = i
-    int (DecimalS19 (MkFixed i)) = i
-    int (DecimalS20 (MkFixed i)) = i
-    int (DecimalS21 (MkFixed i)) = i
-    int (DecimalS22 (MkFixed i)) = i
-    int (DecimalS23 (MkFixed i)) = i
-    int (DecimalS24 (MkFixed i)) = i
-    int (DecimalS25 (MkFixed i)) = i
-    int (DecimalS26 (MkFixed i)) = i
-    int (DecimalS27 (MkFixed i)) = i
-    int (DecimalS28 (MkFixed i)) = i
-    int (DecimalS29 (MkFixed i)) = i
-    int (DecimalS30 (MkFixed i)) = i
-    int (DecimalS31 (MkFixed i)) = i
-    int (DecimalS32 (MkFixed i)) = i
-    int (DecimalS33 (MkFixed i)) = i
-    int (DecimalS34 (MkFixed i)) = i
-    int (DecimalS35 (MkFixed i)) = i
-    int (DecimalS36 (MkFixed i)) = i
-    int (DecimalS37 (MkFixed i)) = i
-    int (DecimalS38 (MkFixed i)) = i
 
+
+
+-- fixed0 :: Decimal -> Fixed0
+-- fixed0 (DecimalS0 f) = f
+-- fixed0 _ = error "decimal0: scale mismatch"
+returnQ $ (flip map) [0..38] $ \i ->
+  (FunD $ mkName $ "fixed" <> show i)
+  [
+    Clause [ConP (mkName $ "DecimalS" <> show i) [VarP $ mkName "f"]]
+    (NormalB $ VarE $ mkName "f")
+    []
+  ,
+    Clause [WildP]
+    (NormalB $ AppE (VarE 'error) (LitE $ StringL $ "deimal" <> show i <> ": scale mismatch"))
+    []
+  ]
 
 
