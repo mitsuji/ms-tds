@@ -23,7 +23,7 @@ module Database.Tds.Message.Client ( Login7 (..)
                                    
                                    ) where
 
-import Data.Monoid((<>),mempty)
+import Data.Monoid(mempty)
 
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -179,7 +179,7 @@ login7HeaderLength =
 login7Length :: Login7 -> Int
 login7Length x =
   let
-    bLen = sum $ map B.length $ login7Bytes1 x <> login7Bytes2 x
+    bLen = (sum $ map B.length $ login7Bytes1 x) + (sum $ map B.length $ login7Bytes2 x)
   in login7HeaderLength + bLen
 
 
@@ -215,7 +215,8 @@ putLogin7 x = do
   
 --    Put.putWord32le 0 -- SSPI long  -- TDS 7.2
 
-  mapM_ Put.putByteString $ bytes1 <> bytes2 -- datas
+  mapM_ Put.putByteString $ bytes1
+  mapM_ Put.putByteString $ bytes2
 
     where
       putIndex :: Int -> B.ByteString -> Put.PutM Int

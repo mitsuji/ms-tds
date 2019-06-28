@@ -2,6 +2,7 @@
 -- Packet Header:   https://msdn.microsoft.com/en-us/library/dd340948.aspx
 
 module Database.Tds.Message.Header ( Header (..)
+                                   , headerLength
                                    ) where
 
 import Data.Word (Word8(..),Word16(..),Word32(..),Word64(..))
@@ -14,7 +15,7 @@ import qualified Data.Binary.Get as Get
 
 type Type = Word8
 type Status = Word8
-type Length = Int
+type Length = Word16
 type SPID = Word16
 type PacketID = Word8
 type Window = Word8
@@ -41,9 +42,15 @@ getHeader = do
   spid <- Get.getWord16be -- SPID
   pcid <- Get.getWord8    -- PacketIK
   win  <- Get.getWord8    -- Window
-  return $ Header pt st (fromIntegral len) spid pcid win
+  return $ Header pt st len spid pcid win
 
 
 instance Binary Header where
   put = putHeader
   get = getHeader
+
+
+headerLength :: Integral a => a
+headerLength = fromIntegral 8
+
+

@@ -14,7 +14,8 @@ module Database.Tds.Message.Prelogin ( Prelogin (..)
                                      , Nonce (..)
                                      ) where
 
-import Data.Monoid((<>),mempty)
+import Data.Monoid(mempty)
+
 import Control.Applicative((<$>),(<*>))
 
 import qualified Data.ByteString as B

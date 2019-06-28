@@ -73,7 +73,7 @@ getBackend sock' = TLS.Backend flush (close sock) sendAll' recvAll
           modifyMVar_ (getSendStep sock') (return . (+1))
             where
               appendBuff = modifyMVar_ (getSendBuff sock') (return . (<>bs))
-              header bs = LB.toStrict $ encode $ Header 0x12 1 (B.length bs +8) 0 0 0
+              header bs = LB.toStrict $ encode $ Header 0x12 1 (fromIntegral $ B.length bs +8) 0 0 0
           
         -- [MEMO] This doesn't work
         -- [MEMO] Want to do this
@@ -82,7 +82,7 @@ getBackend sock' = TLS.Backend flush (close sock) sendAll' recvAll
             0x17 -> sendAll sock bs
             _    -> sendAll sock $ (header bs) <> bs
             where
-              header bs = LB.toStrict $ encode $ Header 0x12 1 (B.length bs +8) 0 0 0
+              header bs = LB.toStrict $ encode $ Header 0x12 1 (fromIntegral $ B.length bs +8) 0 0 0
           
 
         -- [MEMO] Remove TDS header
@@ -98,7 +98,7 @@ getBackend sock' = TLS.Backend flush (close sock) sendAll' recvAll
               recvDropBuff = do
                 header <- recv sock 8
                 let (Header _ _ totalLen _ _ _) = decode $ LB.fromStrict header
-                body <- recv sock $ totalLen -8
+                body <- recv sock $ fromIntegral $ totalLen -8
                 let bs = B.take len body
                 modifyMVar_ (getRecvBuff sock') (\_ -> return $ B.drop len body)
                 return bs
