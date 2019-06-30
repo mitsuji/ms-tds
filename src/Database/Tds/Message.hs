@@ -133,7 +133,6 @@ module Database.Tds.Message ( -- * Client Message
                             
                             ) where
 
-import Data.Monoid((<>),mempty)
 import Control.Applicative((<$>),(<*>))
 
 import qualified Data.ByteString as B
@@ -166,27 +165,24 @@ import Database.Tds.Message.Server
 
 
 putMessage :: Word8 -> LB.ByteString -> Put
-putMessage pt bs = mapM_ (f pt) $ split packetSize bs
+putMessage pt bs = mapM_ f $ split (packetSize -headerLength) bs
   where
-    f :: Word8 -> B.ByteString -> Put
-    f pt bs = do
+    f :: (Bool,LB.ByteString) -> Put
+    f (isLast,bs) = do
       let
-        len = B.length bs
-        flg = if len < (packetSize -8) then 0x01 else 0x00 -- last flag
-      put $ Header pt flg (len +8) 0 0 0
-      Put.putByteString bs
+        len = (fromIntegral $ LB.length bs) + headerLength
+        flg = if isLast then 0x01 else 0x00 -- last flag
+      put $ Header pt flg len 0 0 0
+      Put.putLazyByteString bs
 
   
-    split :: Int64 -> LB.ByteString -> [B.ByteString]
+    split :: Int64 -> LB.ByteString -> [(Bool,LB.ByteString)]
     split len lbs =
       let
-        (lbs',rem) = LB.splitAt (len + 8) lbs
-        bs = LB.toStrict lbs'
+        (lbs',rem) = LB.splitAt len lbs
       in if LB.null rem
-         then [bs]
-         else
-           let bss = split len rem
-           in bs:bss 
+         then [(True,lbs')]
+         else (False,lbs'): split len rem
     
     -- [MEMO] 4096
     packetSize :: Integral a => a
@@ -200,7 +196,7 @@ getMessage = (\(pt,bs) -> (pt,BB.toLazyByteString bs)) <$> runWriterT f
     f :: WriterT BB.Builder Get Word8
     f = do
       (Header pt flg len _ _ _) <- lift get
-      tell =<< BB.byteString <$> (lift $ Get.getByteString (len -8))
+      tell =<< BB.byteString <$> (lift $ Get.getByteString (fromIntegral $ len -8))
       if flg == 0x01
         then return pt
         else f
