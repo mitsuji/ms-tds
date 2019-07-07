@@ -46,7 +46,7 @@ type Nonce = B.ByteString    -- 32byte NONCE
 
 
 data PreloginOption = PLOVersion !MajorVer !MinorVer !BuildVer !SubBuildVer
-                    | PLOEncription !Word8  -- [TODO] flags
+                    | PLOEncryption !Word8  -- [TODO] flags
                     | PLOInstopt !B.ByteString
                     | PLOThreadid !(Maybe Threadid)
                     | PLOMars !Word8  -- MARS(Multiple Active Result Sets) supprt -- [TODO] flags
@@ -67,7 +67,7 @@ preloginOptionPayloadLength :: PreloginOption -> Int
 preloginOptionPayloadLength = f
   where
     f (PLOVersion _ _ _ _)   = 1 + 1 + 4
-    f (PLOEncription _)      = 1
+    f (PLOEncryption _)      = 1
     f (PLOInstopt io)        = B.length io + 1
     f (PLOThreadid _)        = 4
     f (PLOMars _)            = 1
@@ -87,7 +87,7 @@ putPrelogin (Prelogin ops) = do
       let
         ot = case op of
           PLOVersion _ _ _ _   -> 0x00
-          PLOEncription _      -> 0x01
+          PLOEncryption _      -> 0x01
           PLOInstopt _         -> 0x02
           PLOThreadid _        -> 0x03
           PLOMars _            -> 0x04
@@ -107,7 +107,7 @@ putPrelogin (Prelogin ops) = do
       Put.putWord16be b
       Put.putWord16be sb
         
-    putOpt (PLOEncription enc) = Put.putWord8 enc
+    putOpt (PLOEncryption enc) = Put.putWord8 enc
         
     putOpt (PLOInstopt io) = do
       Put.putByteString io
@@ -170,7 +170,7 @@ getPrelogin = do
                                <*> Get.getWord16be
                                <*> Get.getWord16be
                                
-    getOpt 0x01 _ = PLOEncription <$> Get.getWord8
+    getOpt 0x01 _ = PLOEncryption <$> Get.getWord8
     
     getOpt 0x02 len = -- [MEMO] null terminated string
       if len == 1
