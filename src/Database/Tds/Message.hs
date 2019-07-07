@@ -2,8 +2,25 @@ module Database.Tds.Message ( -- * Client Message
                               ClientMessage (..)
                               
                             -- ** Login
-                            , Login7 (..)
+                            , Login7
                             , defaultLogin7
+                            , l7ConnectionID
+                            , l7OptionFlags1
+                            , l7OptionFlags2
+                            , l7OptionFlags3
+                            , l7TypeFlags
+                            , l7TimeZone
+                            , l7Collation
+                            , l7Language
+                            , l7ClientPID
+                            , l7ClientMacAddr
+                            , l7ClientHostName
+                            , l7AppName
+                            , l7ServerName
+                            , l7UserName
+                            , l7Password
+                            , l7Database
+                            , tdsVersion
                             
                             -- ** SQL Batch
                             , SqlBatch (..)
@@ -133,11 +150,7 @@ module Database.Tds.Message ( -- * Client Message
                             
                             ) where
 
-import Control.Applicative((<$>),(<*>))
-
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.ByteString.Builder as BB
+import Control.Applicative((<$>))
 
 import Data.Word (Word8(..),Word16(..),Word32(..),Word64(..))
 import Data.Int (Int8(..),Int16(..),Int32(..),Int64(..))
@@ -145,9 +158,6 @@ import Data.Int (Int8(..),Int16(..),Int32(..),Int64(..))
 import Data.Binary (Put(..),Get(..),Binary(..),decode,encode)
 import qualified Data.Binary.Put as Put
 import qualified Data.Binary.Get as Get
-
-import Control.Monad.Writer (WriterT(..),runWriterT,tell)
-import Control.Monad.Trans (lift)
 
 import Database.Tds.Primitives.Null
 import Database.Tds.Primitives.Decimal
@@ -161,45 +171,6 @@ import Database.Tds.Message.Client
 import Database.Tds.Message.Server
 
 
-
-
-
-putMessage :: Word8 -> LB.ByteString -> Put
-putMessage pt bs = mapM_ f $ split (packetSize -headerLength) bs
-  where
-    f :: (Bool,LB.ByteString) -> Put
-    f (isLast,bs) = do
-      let
-        len = (fromIntegral $ LB.length bs) + headerLength
-        flg = if isLast then 0x01 else 0x00 -- last flag
-      put $ Header pt flg len 0 0 0
-      Put.putLazyByteString bs
-
-  
-    split :: Int64 -> LB.ByteString -> [(Bool,LB.ByteString)]
-    split len lbs =
-      let
-        (lbs',rem) = LB.splitAt len lbs
-      in if LB.null rem
-         then [(True,lbs')]
-         else (False,lbs'): split len rem
-    
-    -- [MEMO] 4096
-    packetSize :: Integral a => a
-    packetSize = fromIntegral $ l7PacketSize defaultLogin7
-
-  
-
-getMessage :: Get (Word8,LB.ByteString)
-getMessage = (\(pt,bs) -> (pt,BB.toLazyByteString bs)) <$> runWriterT f
-  where
-    f :: WriterT BB.Builder Get Word8
-    f = do
-      (Header pt flg len _ _ _) <- lift get
-      tell =<< BB.byteString <$> (lift $ Get.getByteString (fromIntegral $ len -8))
-      if flg == 0x01
-        then return pt
-        else f
 
 
 
