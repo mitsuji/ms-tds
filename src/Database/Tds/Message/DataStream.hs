@@ -499,7 +499,7 @@ withValidNull = f
 
 
 withValidIntegral :: String -> TypeInfo -> (TypeInfo -> a) -> a
-withValidIntegral ht = f
+withValidIntegral tn = f
   where
     f :: TypeInfo -> (TypeInfo -> a) -> a
     f ti@TIBit g = g ti
@@ -512,7 +512,7 @@ withValidIntegral ht = f
     f ti@TIIntN2 g = g ti 
     f ti@TIIntN4 g = g ti
     f ti@TIIntN8 g = g ti
-    f ti _ = error $ "withValidIntegral: " <> (show ti) <> " is not convertible from/to " <> ht
+    f ti _ = error $ "withValidIntegral: " <> (show ti) <> " is not convertible from/to " <> tn
 
 withValidBool = withValidIntegral "Bool"
 withValidInt = withValidIntegral "Int"
@@ -522,16 +522,12 @@ isIntegralN :: TypeInfo -> Bool
 isIntegralN = f
   where
     f :: TypeInfo -> Bool
-    f TIBit = False
-    f TIInt1 = False
-    f TIInt2 = False
-    f TIInt4 = False
-    f TIInt8 = False
     f TIBitN = True
     f TIIntN1 = True
     f TIIntN2 = True
     f TIIntN4 = True
     f TIIntN8 = True
+    f _ = False
 
 
 getIntegral :: Integral a => TypeInfo -> Get a
@@ -576,10 +572,9 @@ isMoneyN :: TypeInfo -> Bool
 isMoneyN = f
   where
     f :: TypeInfo -> Bool
-    f TIMoney4 = False
-    f TIMoney8 = False
     f TIMoneyN4 = True
     f TIMoneyN8 = True
+    f _ = False
     
 getMoney :: TypeInfo -> Get Money
 getMoney TIMoney4 = bytesToMoney4 <$> Get.getInt32le
@@ -613,10 +608,9 @@ isUTCTimeN :: TypeInfo -> Bool
 isUTCTimeN = f
   where
     f :: TypeInfo -> Bool
-    f TIDateTime4 = False
-    f TIDateTime8 = False
     f TIDateTimeN4 = True
     f TIDateTimeN8 = True
+    f _ = False
     
 getUTCTime :: TypeInfo -> Get UTCTime
 getUTCTime TIDateTime4 = bytesToUtc4 <$> Get.getWord16le <*> Get.getWord16le
@@ -640,14 +634,14 @@ putUTCTime TIDateTimeN8 time = putUTCTime TIDateTime8 time
 
 
 withValidFloat' :: String -> TypeInfo -> (TypeInfo -> a) -> a
-withValidFloat' hn = f
+withValidFloat' tn = f
   where
     f :: TypeInfo -> (TypeInfo -> a) -> a
     f ti@TIFlt4 g = g ti
     f ti@TIFlt8 g = g ti
     f ti@TIFltN4 g = g ti
     f ti@TIFltN8 g = g ti
-    f ti _ = error $ "withValidFloat': " <> (show ti) <> " is not convertible from/to " <> hn
+    f ti _ = error $ "withValidFloat': " <> (show ti) <> " is not convertible from/to " <> tn
 
 withValidFloat = withValidFloat' "Float"
 withValidDouble = withValidFloat' "Double"
@@ -656,10 +650,9 @@ isFloatN :: TypeInfo -> Bool
 isFloatN = f
   where
     f :: TypeInfo -> Bool
-    f TIFlt4 = False
-    f TIFlt8 = False
     f TIFltN4 = True
     f TIFltN8 = True
+    f _ = False
     
 getFloat :: Fractional a => TypeInfo -> Get a
 getFloat TIFlt4 = realToFrac . wordToFloat <$> Get.getWord32le
@@ -729,15 +722,17 @@ withValidByteString  = f
 
 
 
-withValidText :: TypeInfo -> (TypeInfo -> a) -> a
-withValidText  = f
+withValidText' :: String -> TypeInfo -> (TypeInfo -> a) -> a
+withValidText' tn = f
   where
     f :: TypeInfo -> (TypeInfo -> a) -> a
     f ti@(TINChar _ _) g = g ti
     f ti@(TINVarChar _ _) g = g ti
     f ti@(TINText _ _) g = g ti
-    f ti _ = error $ "withValidText: " <> (show ti) <> " is not convertible from/to Text"
-    
+    f ti _ = error $ "withValidText: " <> (show ti) <> " is not convertible from/to " <> tn
+
+withValidText = withValidText' "Text"
+withValidString = withValidText' "String"
 
 
 
@@ -843,6 +838,11 @@ instance Data LT.Text where
   fromRawBytes ti Nothing = withValidText ti $ \_ -> error "Text.fromRawBytes: Null value is not convertible to Text"
   toRawBytes ti t = withValidText ti $ \_ -> Just $ LT.encodeUtf16LE t
 
+instance Data String where
+  fromRawBytes ti (Just bs) = withValidString ti $ \_ -> LT.unpack $ LT.decodeUtf16LE bs
+  fromRawBytes ti Nothing = withValidString ti $ \_ -> error "String.fromRawBytes: Null value is not convertible to String"
+  toRawBytes ti s = withValidString ti $ \_ -> Just $ LT.encodeUtf16LE $ LT.pack s
+
 
 
 instance Data (Maybe Bool) where
@@ -927,5 +927,9 @@ instance Data (Maybe LB.ByteString) where
 instance Data (Maybe LT.Text) where
   fromRawBytes ti rb = withValidText ti $ \_ -> LT.decodeUtf16LE <$> rb 
   toRawBytes ti t = withValidText ti $ \_ -> LT.encodeUtf16LE <$> t
+
+instance Data (Maybe String) where
+  fromRawBytes ti rb = withValidString ti $ \_ -> LT.unpack . LT.decodeUtf16LE <$> rb 
+  toRawBytes ti s = withValidString ti $ \_ -> LT.encodeUtf16LE . LT.pack <$> s
 
 

@@ -6,7 +6,10 @@
 
 
 module Database.Tds.Message.Client ( Login7
+                                   , tdsVersion
                                    , defaultLogin7
+                                   , l7PacketSize
+                                   , l7ClientProgVer
                                    , l7ConnectionID
                                    , l7OptionFlags1
                                    , l7OptionFlags2
@@ -14,6 +17,7 @@ module Database.Tds.Message.Client ( Login7
                                    , l7TypeFlags
                                    , l7TimeZone
                                    , l7Collation
+                                   , l7CltIntName
                                    , l7Language
                                    , l7ClientPID
                                    , l7ClientMacAddr
@@ -58,7 +62,6 @@ import Data.Bits ((.&.),(.|.),xor,shift)
 
 import Control.Monad (foldM,foldM_)
 
-import Database.Tds.Message.Header
 import Database.Tds.Message.Prelogin
 import Database.Tds.Message.DataStream
 import Database.Tds.Primitives.Collation
@@ -90,20 +93,29 @@ data Login7 = Login7 { l7TdsVersion :: !Word32
                      }
             deriving (Show)
 
+
+tdsVersion :: Word32
+tdsVersion = 0x71000001
+-- [MEMO]
+-- tds70Version = 0x70000000
+-- tds71Version = 0x71000001
+-- tds72Version = 0x72090002
+-- tds73Version = 0x730B0003
+-- tds74Version = 0x74000004
+
+
 defaultLogin7 :: Login7
 defaultLogin7 = Login7 { l7TdsVersion = tdsVersion
-                         , l7PacketSize = packetSize
-                         , l7ClientProgVer = 0x0683f2f8  -- [MEMO] 0x00000007
+                         , l7PacketSize = 4096
+                         , l7ClientProgVer = 0 -- [MEMO] 0x0683f2f8, 0x00000007
                          , l7ConnectionID = 0
                          , l7OptionFlags1 = 0x80 + 0x40 + 0x20
                          , l7OptionFlags2 = 0  -- [MEMO] 0x02 + 0x01
-
-
                          , l7OptionFlags3 = 0
                          , l7TypeFlags = 0
                          , l7TimeZone = 0  -- [MEMO] -120
                          , l7Collation = 0x00000000  -- [MEMO] 0x36040000, 0x1104d000, 0x09040000
-                         , l7CltIntName = T.pack "DB-Library" -- [MDMO] "OLEDB", "ODBC"
+                         , l7CltIntName = mempty -- [MDMO] "DB-Library", "OLEDB", "ODBC"
                          , l7Language = mempty -- [MEMO] "us_english"
                          , l7ClientPID = 0
                          , l7ClientMacAddr = mempty

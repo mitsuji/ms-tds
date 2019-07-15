@@ -1,9 +1,14 @@
 module Database.Tds.Message ( -- * Client Message
                               ClientMessage (..)
+                            , getClientMessage
+                            , putClientMessage
                               
                             -- ** Login
                             , Login7
+                            , tdsVersion
                             , defaultLogin7
+                            , l7PacketSize
+                            , l7ClientProgVer
                             , l7ConnectionID
                             , l7OptionFlags1
                             , l7OptionFlags2
@@ -11,6 +16,7 @@ module Database.Tds.Message ( -- * Client Message
                             , l7TypeFlags
                             , l7TimeZone
                             , l7Collation
+                            , l7CltIntName
                             , l7Language
                             , l7ClientPID
                             , l7ClientMacAddr
@@ -20,7 +26,6 @@ module Database.Tds.Message ( -- * Client Message
                             , l7UserName
                             , l7Password
                             , l7Database
-                            , tdsVersion
                             
                             -- ** SQL Batch
                             , SqlBatch (..)
@@ -39,7 +44,8 @@ module Database.Tds.Message ( -- * Client Message
                             
                             -- * Server Message
                             , ServerMessage (..)
-                            , ServerMessageInstance (..)
+                            , getServerMessage
+                            , putServerMessage
                             
                             , TokenStreams (..)
                             , TokenStream (..)
@@ -152,12 +158,18 @@ module Database.Tds.Message ( -- * Client Message
 
 import Control.Applicative((<$>))
 
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Builder as BB
+
 import Data.Word (Word8(..),Word16(..),Word32(..),Word64(..))
 import Data.Int (Int8(..),Int16(..),Int32(..),Int64(..))
 
 import Data.Binary (Put(..),Get(..),Binary(..),decode,encode)
 import qualified Data.Binary.Put as Put
 import qualified Data.Binary.Get as Get
+
+import Control.Monad.Writer (WriterT(..),runWriterT,tell)
+import Control.Monad.Trans (lift)
 
 import Database.Tds.Primitives.Null
 import Database.Tds.Primitives.Decimal
@@ -174,6 +186,40 @@ import Database.Tds.Message.Server
 
 
 
+putMessage :: Word32 -> Word8 -> LB.ByteString -> Put
+putMessage ps pt bs = mapM_ f $ split (ps -headerLength) bs
+  where
+    f :: (Bool,LB.ByteString) -> Put
+    f (isLast,bs) = do
+      let
+        len = (fromIntegral $ LB.length bs) + headerLength
+        flg = if isLast then 0x01 else 0x00 -- last flag
+      put $ Header pt flg len 0 0 0
+      Put.putLazyByteString bs
+
+  
+    split :: Word32 -> LB.ByteString -> [(Bool,LB.ByteString)]
+    split len lbs =
+      let
+        (lbs',rem) = LB.splitAt (fromIntegral len) lbs
+      in if LB.null rem
+         then [(True,lbs')]
+         else (False,lbs'): split len rem
+
+
+getMessage :: Get (Word8,LB.ByteString)
+getMessage = (\(pt,bs) -> (pt,BB.toLazyByteString bs)) <$> runWriterT f
+  where
+    f :: WriterT BB.Builder Get Word8
+    f = do
+      (Header pt flg len _ _ _) <- lift get
+      tell =<< BB.byteString <$> (lift $ Get.getByteString (fromIntegral $ len -8))
+      if flg == 0x01
+        then return pt
+        else f
+
+
+
 
 -- | [\[MS-TDS\] 2.2.1 Client Messages](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/7ea9ee1a-b461-41f2-9004-141c0e712935)
 data ClientMessage = CMPrelogin !Prelogin
@@ -182,14 +228,14 @@ data ClientMessage = CMPrelogin !Prelogin
                    | CMRpcRequest !RpcRequest
                    deriving (Show)
 
-putClientMessage :: ClientMessage -> Put
-putClientMessage x =
+putClientMessage :: Word32 -> ClientMessage -> Put
+putClientMessage ps x =
   let (pt,bs) = case x of
         CMPrelogin   pr -> (0x12,encode pr)
         CMLogin7     l7 -> (0x10,encode l7)
         CMSqlBatch   b  -> (0x01,encode b)
         CMRpcRequest r  -> (0x03,encode r)
-  in putMessage pt bs
+  in putMessage ps pt bs
 
 getClientMessage :: Get ClientMessage
 getClientMessage = do
@@ -201,34 +247,23 @@ getClientMessage = do
     0x03 -> return $ CMRpcRequest $ decode bs
     _ -> fail "getClientMessage: invalid packet type"
 
-instance Binary ClientMessage where
-  put = putClientMessage
-  get = getClientMessage
 
 
 
-class Binary a => ServerMessageInstance a
-instance ServerMessageInstance Prelogin
-instance ServerMessageInstance TokenStreams
+-- | [\[MS-TDS\] 2.2.2 Server Messages](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/342f4cbb-2b4b-489c-8b63-f99b12021a94)
+class Binary a => ServerMessage a
+instance ServerMessage Prelogin
+instance ServerMessage TokenStreams
 
-putServerMessageInstance :: ServerMessageInstance a => a -> Put
-putServerMessageInstance x =
-  putMessage 0x04 $ encode x
+putServerMessage :: ServerMessage a => Word32 -> a -> Put
+putServerMessage ps x =
+  putMessage ps 0x04 $ encode x
 
-getServerMessageInstance :: ServerMessageInstance a => Get a
-getServerMessageInstance = do
+getServerMessage :: ServerMessage a => Get a
+getServerMessage = do
   (pt,bs) <- getMessage
   case pt of
     0x04 -> return $ decode bs
     _ -> fail "getServerMessageInstance: invalid packet type"
-
-
--- | [\[MS-TDS\] 2.2.2 Server Messages](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/342f4cbb-2b4b-489c-8b63-f99b12021a94)
-newtype ServerMessage a = ServerMessage a
-                        deriving (Show)
-
-instance (ServerMessageInstance a) => Binary (ServerMessage a) where
-  put (ServerMessage x) = putServerMessageInstance x
-  get = ServerMessage <$> getServerMessageInstance
 
 
