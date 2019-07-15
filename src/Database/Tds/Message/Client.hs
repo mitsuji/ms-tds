@@ -107,7 +107,7 @@ tdsVersion = 0x71000001
 defaultLogin7 :: Login7
 defaultLogin7 = Login7 { l7TdsVersion = tdsVersion
                          , l7PacketSize = 4096
-                         , l7ClientProgVer = 0x0683f2f8  -- [MEMO] 0x00000007
+                         , l7ClientProgVer = 0 -- [MEMO] 0x0683f2f8, 0x00000007
                          , l7ConnectionID = 0
                          , l7OptionFlags1 = 0x80 + 0x40 + 0x20
                          , l7OptionFlags2 = 0  -- [MEMO] 0x02 + 0x01
@@ -115,7 +115,7 @@ defaultLogin7 = Login7 { l7TdsVersion = tdsVersion
                          , l7TypeFlags = 0
                          , l7TimeZone = 0  -- [MEMO] -120
                          , l7Collation = 0x00000000  -- [MEMO] 0x36040000, 0x1104d000, 0x09040000
-                         , l7CltIntName = T.pack "DB-Library" -- [MDMO] "OLEDB", "ODBC"
+                         , l7CltIntName = mempty -- [MDMO] "DB-Library", "OLEDB", "ODBC"
                          , l7Language = mempty -- [MEMO] "us_english"
                          , l7ClientPID = 0
                          , l7ClientMacAddr = mempty
