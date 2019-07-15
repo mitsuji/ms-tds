@@ -42,9 +42,6 @@ used by Microsoft SQL Server and others.
   * Test legacy data types
 
 
-* Transaction support
-
-
 * Implement data types
   * AltMetaData
   * AltRow
@@ -71,8 +68,6 @@ used by Microsoft SQL Server and others.
   * Login7: client program version
   * Login7: timezone
   * Login7: language
-  * Login7: collation
-  * RpcReqBatchProcId: ProcID
   * TSEnvChange: Type
   * TSLoginAck: Interface
   * TSReturnValue: Status
@@ -80,7 +75,7 @@ used by Microsoft SQL Server and others.
 
 * Implement Flag interfaces
   * Header status
-  * PLOEncription
+  * PLOEncryption
   * PLOMars
   * Login7 flag1
   * Login7 flag2
@@ -102,7 +97,6 @@ used by Microsoft SQL Server and others.
   * Mars support
   * SSPI support
   * FedAuth support
-  * Variable PacketSize support
   * TDS protocol versions other than 7.1
 
   * Attention  
