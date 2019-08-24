@@ -13,24 +13,25 @@ import Data.Fixed (Fixed(..))
 import Data.Bits ((.&.),shift)
 import Database.Tds.Primitives.Fixed
 
-type Money = Fixed4
+newtype Money = Money Fixed4
+              deriving (Show)
 
 bytesToMoney4 :: Int32 -> Money
-bytesToMoney4 i = MkFixed $ fromIntegral i
+bytesToMoney4 i = Money $ MkFixed $ fromIntegral i
 
 bytesToMoney8 :: Int32 -> Int32 -> Money
 bytesToMoney8 m l =
   let
     m' = fromIntegral m
     l' = fromIntegral l
-  in MkFixed $ (shift m' 32) + l'
+  in Money $ MkFixed $ (shift m' 32) + l'
 
 
 moneyToBytes4 :: Money -> Int32
-moneyToBytes4 (MkFixed i) = fromIntegral i
+moneyToBytes4 (Money (MkFixed i)) = fromIntegral i
 
 moneyToBytes8 :: Money -> (Int32,Int32)
-moneyToBytes8 (MkFixed i) =
+moneyToBytes8 (Money (MkFixed i)) =
   let
     m = shift i (-32)
     l = i .&. 0xffffffff
