@@ -36,14 +36,14 @@ bytesToUtc8 iday w3hsec =
 utcToBytes4 :: UTCTime -> (Word16,Word16)
 utcToBytes4 (UTCTime date time) =
   let
-    wday = fromIntegral $ diffDays (fromGregorian 1900 1 1) date
+    wday = fromIntegral $ diffDays date (fromGregorian 1900 1 1)
     wmin = truncate $ time / 60
   in (wday,wmin)
 
 utcToBytes8 :: UTCTime -> (Int32,Word32)
 utcToBytes8 (UTCTime date time) =
   let
-    iday = fromIntegral $ diffDays (fromGregorian 1900 1 1) date
+    iday = fromIntegral $ diffDays date (fromGregorian 1900 1 1)
     w3hsec = truncate $ time * 300
   in (iday,w3hsec)
 
