@@ -34,6 +34,8 @@ import Data.Time (UTCTime(..))
 import Data.UUID.Types (UUID)
 import qualified Data.UUID.Types as UUID
 
+import Data.Fixed(Fixed(..),HasResolution(..))
+
 import Database.Tds.Primitives.Null
 import Database.Tds.Primitives.Money
 import Database.Tds.Primitives.DateTime
@@ -669,26 +671,30 @@ putFloat TIFltN8 f = putFloat TIFlt8 f
 
 
 
-withValidDecimal :: TypeInfo -> (TypeInfo -> a) -> a
-withValidDecimal  = f
+
+
+
+
+withValidFixed :: TypeInfo -> (TypeInfo -> a) -> a
+withValidFixed  = f
   where
     f :: TypeInfo -> (TypeInfo -> a) -> a
     f ti@(TIDecimalN _ _) g = g ti
     f ti@(TINumericN _ _) g = g ti
-    f ti _ = error $ "withValidDecimal: " <> (show ti) <> " is not convertible from/to Decimal"
+    f ti _ = error $ "withValidFixed: " <> (show ti) <> " is not convertible from/to Fixed"
 
 -- https://msdn.microsoft.com/en-us/library/ee780893.aspx
 -- [MEMO] sign byte + signed bytes
-getDecimal :: Int -> Scale -> Get Decimal
-getDecimal len s = 
-  bytesToDecimal s <$> Get.getWord8 <*> (Get.getByteString $ fromIntegral $ len -1)
+getFixed :: (HasResolution a) => Int -> Get (Fixed a)
+getFixed len =
+  bytesToFixed <$> Get.getWord8 <*> (Get.getByteString $ fromIntegral $ len -1)
 
-putDecimal :: TypeInfo -> Decimal -> Put
-putDecimal (TIDecimalN p _) dec = do -- [TODO] test
-  let (s,bs) = decimalToBytes p dec
+putFixed :: (HasResolution a) => TypeInfo -> Fixed a -> Put
+putFixed (TIDecimalN p _) f = do -- [TODO] test
+  let (s,bs) = fixedToBytes p f
   Put.putWord8 s
   Put.putByteString bs
-putDecimal (TINumericN p s) dec = putDecimal (TIDecimalN p s) dec
+putFixed (TINumericN p s) f = putFixed (TIDecimalN p s) f
 
 
 
@@ -801,15 +807,12 @@ instance Data Double where
   fromRawBytes ti Nothing = withValidDouble ti $ \_ -> error "Double.fromRawBytes: Null value is not convertible to Double"
   toRawBytes ti f = withValidDouble ti $ \vt -> Just $ runPut $ putFloat vt f
 
-instance Data Decimal where
-  fromRawBytes ti (Just bs) = withValidDecimal ti $ \vt ->
-    runGet (getDecimal (fromIntegral $ LB.length bs) (scale vt)) bs
-    where
-      scale :: TypeInfo -> Scale
-      scale (TIDecimalN _ s) = s
-      scale (TINumericN _ s) = s
-  fromRawBytes ti Nothing = withValidDecimal ti $ \_ -> error "Decimal.fromRawBytes: Null value is not convertible to Decimal"
-  toRawBytes ti dec = withValidDecimal ti $ \_ -> Just $ runPut $ putDecimal ti dec
+
+instance (HasResolution a) => Data (Fixed a) where
+  fromRawBytes ti (Just bs) = withValidFixed ti $ \vt ->
+    runGet (getFixed (fromIntegral $ LB.length bs)) bs
+  fromRawBytes ti Nothing = withValidFixed ti $ \_ -> error "Fixed.fromRawBytes: Null value is not convertible to Fixed"
+  toRawBytes ti f = withValidFixed ti $ \_ -> Just $ runPut $ putFixed ti f
     
 instance Data UUID where
   fromRawBytes ti (Just bs) = withValidUUID ti $ \_ -> case UUID.fromByteString bs of
@@ -894,14 +897,11 @@ instance Data (Maybe Double) where
                       Nothing | (not . isFloatN) vt -> error $ "(Maybe Double).toRawBytes: Nothing is not convertible to " <> (show vt)
                       _ -> runPut . (putFloat vt) <$> f
 
-instance Data (Maybe Decimal) where
-  fromRawBytes ti rb = withValidDecimal ti $ \vt ->
-    (\bs -> runGet (getDecimal (fromIntegral $ LB.length bs) (scale vt)) bs) <$> rb
-    where
-      scale :: TypeInfo -> Scale
-      scale (TIDecimalN _ s) = s
-      scale (TINumericN _ s) = s
-  toRawBytes ti dec = withValidDecimal ti $ \_ -> runPut . putDecimal ti <$>  dec
+
+instance (HasResolution a) => Data (Maybe (Fixed a)) where
+  fromRawBytes ti rb = withValidFixed ti $ \vt ->
+    (\bs -> runGet (getFixed (fromIntegral $ LB.length bs)) bs) <$> rb
+  toRawBytes ti f = withValidFixed ti $ \_ -> runPut . putFixed ti <$> f
 
 instance Data (Maybe UUID) where
   fromRawBytes ti rb = withValidUUID ti $ \_ -> f <$> rb
