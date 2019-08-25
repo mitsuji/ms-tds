@@ -108,7 +108,7 @@ integerToBytes len i = B.pack $ f len i
     f 0 _ = []
     f len i =
       let
-        (d,m) = divMod i 0xff
+        (d,m) = divMod i 0x100
       in (fromIntegral m) : f (len-1) d
 
 

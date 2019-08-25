@@ -235,12 +235,12 @@ putTypeInfo (TIFltN8     ) = Put.putWord8 0x6d >> Put.putWord8 8
 putTypeInfo (TIGUID) = Put.putWord8 0x24 >> Put.putWord8 16
 putTypeInfo (TIDecimalN p s) = do
   Put.putWord8 0x6a
-  Put.putWord8 $ precisionToLen p -- [TODO] test
+  Put.putWord8 $ (precisionToLen p) +1
   Put.putWord8 p
   Put.putWord8 s
 putTypeInfo (TINumericN p s) = do
   Put.putWord8 0x6c
-  Put.putWord8 $ precisionToLen p -- [TODO] test
+  Put.putWord8 $ (precisionToLen p) +1
   Put.putWord8 p
   Put.putWord8 s
 
