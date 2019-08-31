@@ -255,6 +255,6 @@ getServerMessage = do
   (pt,bs) <- getMessage
   case pt of
     0x04 -> return $ decode bs
-    _ -> fail "getServerMessageInstance: invalid packet type"
+    _ -> fail "getServerMessage: invalid packet type"
 
 
