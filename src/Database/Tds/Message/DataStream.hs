@@ -43,6 +43,7 @@ import Database.Tds.Primitives.Float
 import Database.Tds.Primitives.Decimal
 import Database.Tds.Primitives.Collation
 
+import Data.Maybe (fromJust)
 
 
 
@@ -706,6 +707,18 @@ withValidUUID  = f
     f ti@TIGUID g = g ti
     f ti _ = error $ "withValidUUID: " <> (show ti) <> " is not convertible from/to UUID"
 
+getUUID :: TypeInfo -> Get (Maybe UUID)
+getUUID _ = do
+  (d1,d2,d3,d4) <- (,,,) <$> Get.getWord32le <*> Get.getWord16le <*> Get.getWord16le <*> Get.getByteString 8
+  return $ UUID.fromByteString $
+    runPut $ Put.putWord32be d1 >> Put.putWord16be d2 >> Put.putWord16be d3 >> Put.putByteString d4
+
+putUUID :: TypeInfo -> UUID -> Put
+putUUID _ x = do
+  let bs = UUID.toByteString x
+  let (d1,d2,d3,d4) = flip runGet bs $ (,,,) <$> Get.getWord32be <*> Get.getWord16be <*> Get.getWord16be <*> Get.getByteString 8
+  Put.putWord32le d1 >> Put.putWord16le d2 >> Put.putWord16le d3 >> Put.putByteString d4
+
 
 
 
@@ -794,32 +807,32 @@ instance Data Money where
     
 instance Data UTCTime where
   fromRawBytes ti (Just bs) = withValidUTCTime ti $ \vt -> runGet (getUTCTime vt) bs
-  fromRawBytes ti Nothing = withValidUTCTime ti $ \vt -> error "UTCTime.fromRawBytes: Null value is not convertible to UTCTime"
+  fromRawBytes ti Nothing = withValidUTCTime ti $ \_ -> error "UTCTime.fromRawBytes: Null value is not convertible to UTCTime"
   toRawBytes ti dt = withValidUTCTime ti $ \vt -> Just $ runPut $ putUTCTime vt dt
 
 instance Data Float where
-  fromRawBytes ti (Just bs) = withValidFloat ti $ \vt -> runGet (getFloat ti) bs
+  fromRawBytes ti (Just bs) = withValidFloat ti $ \vt -> runGet (getFloat vt) bs
   fromRawBytes ti Nothing = withValidFloat ti $ \_ -> error "Float.fromRawBytes: Null value is not convertible to Float"
   toRawBytes ti f = withValidFloat ti $ \vt -> Just $ runPut $ putFloat vt f
 
 instance Data Double where
-  fromRawBytes ti (Just bs) = withValidDouble ti $ \vt -> runGet (getFloat ti) bs
+  fromRawBytes ti (Just bs) = withValidDouble ti $ \vt -> runGet (getFloat vt) bs
   fromRawBytes ti Nothing = withValidDouble ti $ \_ -> error "Double.fromRawBytes: Null value is not convertible to Double"
   toRawBytes ti f = withValidDouble ti $ \vt -> Just $ runPut $ putFloat vt f
 
 
 instance (HasResolution a) => Data (Fixed a) where
-  fromRawBytes ti (Just bs) = withValidFixed ti $ \vt ->
+  fromRawBytes ti (Just bs) = withValidFixed ti $ \_ ->
     runGet (getFixed (fromIntegral $ LB.length bs)) bs
   fromRawBytes ti Nothing = withValidFixed ti $ \_ -> error "Fixed.fromRawBytes: Null value is not convertible to Fixed"
-  toRawBytes ti f = withValidFixed ti $ \_ -> Just $ runPut $ putFixed ti f
+  toRawBytes ti f = withValidFixed ti $ \vt -> Just $ runPut $ putFixed vt f
     
 instance Data UUID where
-  fromRawBytes ti (Just bs) = withValidUUID ti $ \_ -> case UUID.fromByteString bs of
-                                                         Nothing -> error "UUID.fromRawBytes: UUID.fromBtyteString error"
-                                                         Just (uuid) -> uuid
+  fromRawBytes ti (Just bs) = withValidUUID ti $ \vt -> case runGet (getUUID vt) bs of
+                                                          Nothing -> error "UUID.fromRawBytes: UUID.fromBtyteString error"
+                                                          Just (uuid) -> uuid
   fromRawBytes ti Nothing = withValidUUID ti $ \_ -> error "UUID.fromRawBytes: Null value is not convertible to UUID"
-  toRawBytes ti uuid = withValidUUID ti $ \_ -> Just $ UUID.toByteString uuid
+  toRawBytes ti uuid = withValidUUID ti $ \vt -> Just $ runPut $ putUUID vt uuid
 
 instance Data B.ByteString where
   fromRawBytes ti (Just bs) = withValidByteString ti $ \_ -> LB.toStrict bs
@@ -899,18 +912,18 @@ instance Data (Maybe Double) where
 
 
 instance (HasResolution a) => Data (Maybe (Fixed a)) where
-  fromRawBytes ti rb = withValidFixed ti $ \vt ->
+  fromRawBytes ti rb = withValidFixed ti $ \_ ->
     (\bs -> runGet (getFixed (fromIntegral $ LB.length bs)) bs) <$> rb
-  toRawBytes ti f = withValidFixed ti $ \_ -> runPut . putFixed ti <$> f
+  toRawBytes ti f = withValidFixed ti $ \vt -> runPut . putFixed vt <$> f
 
 instance Data (Maybe UUID) where
-  fromRawBytes ti rb = withValidUUID ti $ \_ -> f <$> rb
+  fromRawBytes ti rb = withValidUUID ti $ \vt -> f vt <$> rb
     where
-      f :: LB.ByteString -> UUID
-      f bs = case UUID.fromByteString bs of
-               Nothing -> error "(Maybe UUID).fromRawBytes: UUID.fromBtyteString error"
-               Just (uuid) -> uuid
-  toRawBytes ti m = withValidUUID ti $ \_ -> UUID.toByteString <$> m
+      f :: TypeInfo -> LB.ByteString -> UUID
+      f vt bs = case (runGet (getUUID vt)) bs of
+                  Nothing -> error "(Maybe UUID).fromRawBytes: UUID.fromBtyteString error"
+                  Just (uuid) -> uuid
+  toRawBytes ti m = withValidUUID ti $ \vt -> runPut . putUUID vt <$> m
 
 instance Data (Maybe B.ByteString) where
   fromRawBytes ti rb = withValidByteString ti $ \_ -> LB.toStrict <$> rb
