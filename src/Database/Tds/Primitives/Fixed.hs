@@ -84,7 +84,6 @@ module Database.Tds.Primitives.Fixed ( Fixed0 (..)
 
 import Data.Monoid ((<>))
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (returnQ)
 import Data.Fixed (HasResolution(..),Fixed(..))
 
 
@@ -92,9 +91,9 @@ import Data.Fixed (HasResolution(..),Fixed(..))
 -- ...
 -- data Exp38
 #if MIN_VERSION_template_haskell(2,11,0)
-returnQ $ (flip map) [0..38] $ \i -> DataD [] (mkName $ "Exp" <> (show i)) [] Nothing [] []
+$(return $ (flip map) [0..38] $ \i -> DataD [] (mkName $ "Exp" <> (show i)) [] Nothing [] [])
 #else
-returnQ $ (flip map) [0..38] $ \i -> DataD [] (mkName $ "Exp" <> (show i)) [] [] []
+$(return $ (flip map) [0..38] $ \i -> DataD [] (mkName $ "Exp" <> (show i)) [] [] [])
 #endif
 
 
@@ -102,20 +101,20 @@ returnQ $ (flip map) [0..38] $ \i -> DataD [] (mkName $ "Exp" <> (show i)) [] []
 -- ...
 -- instance HasResolution Exp38 where resolution _ = 100000000000000000000000000000000000000
 #if MIN_VERSION_template_haskell(2,11,0)
-returnQ $ (flip map) [0..38] $ \i ->
-  InstanceD Nothing [] (AppT (ConT ''HasResolution) (ConT $ (mkName $ "Exp" <> (show i))))
-  [FunD 'resolution [Clause [WildP] (NormalB (LitE (IntegerL (10^i)))) []]]
+$(return $ (flip map) [0..38] $ \i ->
+    InstanceD Nothing [] (AppT (ConT ''HasResolution) (ConT $ (mkName $ "Exp" <> (show i))))
+    [FunD 'resolution [Clause [WildP] (NormalB (LitE (IntegerL (10^i)))) []]])
 #else
-returnQ $ (flip map) [0..38] $ \i ->
-  InstanceD [] (AppT (ConT ''HasResolution) (ConT $ (mkName $ "Exp" <> (show i))))
-  [FunD 'resolution [Clause [WildP] (NormalB (LitE (IntegerL (10^i)))) []]]
+$(return $ (flip map) [0..38] $ \i ->
+    InstanceD [] (AppT (ConT ''HasResolution) (ConT $ (mkName $ "Exp" <> (show i))))
+    [FunD 'resolution [Clause [WildP] (NormalB (LitE (IntegerL (10^i)))) []]])
 #endif
 
 
 -- type Fixed0 = Fixed Exp0
 -- ...
 -- type Fixed38 = Fixed Exp38
-returnQ $ (flip map) [0..38] $ \i -> TySynD (mkName $ "Fixed" <> (show i)) [] $
-                                     AppT (ConT ''Fixed) (ConT $ mkName $ "Exp" <> (show i))
+$(return $ (flip map) [0..38] $ \i -> TySynD (mkName $ "Fixed" <> (show i)) [] $
+                                      AppT (ConT ''Fixed) (ConT $ mkName $ "Exp" <> (show i)))
 
 
