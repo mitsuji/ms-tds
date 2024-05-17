@@ -1,8 +1,0 @@
-resolver: lts-6.35
-
-packages:
-- .
-
-extra-deps:
-- binary-0.8.7.0
-
