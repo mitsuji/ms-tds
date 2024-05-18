@@ -1,9 +1,0 @@
-resolver: lts-2.22
-
-packages:
-- .
-
-extra-deps:
-- uuid-types-1.0.3
-- binary-0.8.7.0
-
