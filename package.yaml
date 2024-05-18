@@ -19,6 +19,10 @@ category:            Database
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/mitsuji/ms-tds#readme>
 
+##
+## for usual
+##   with tls recent version, crypton, crypton-x509-store, crypton-x509-system
+##
 dependencies:
 - base >= 4.7 && < 5
 - bytestring
@@ -35,6 +39,27 @@ dependencies:
 - crypton-x509-system
 - uuid-types
 - template-haskell
+
+##
+## for lts-21.25 or less
+##   with tls 1.6.0 or less, cryptonite, x509-store, x509-system
+##
+#dependencies:
+#- base >= 4.7 && < 5
+#- bytestring
+#- binary >= 0.8.1.0
+#- mtl
+#- array
+#- text
+#- time
+#- network
+#- tls
+#- data-default-class
+#- cryptonite
+#- x509-store
+#- x509-system
+#- uuid-types
+#- template-haskell
 
 
 library:
